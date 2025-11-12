@@ -159,8 +159,8 @@ recon_params:
         numReps_withLangevin: 0
 
 
-    AdamOnly_all: # used in Koide-Majima et al., 2024
-        feat_set: "all" # "all", "middle", or "custom"
+    AdamOnly_all:
+        feat_set: "all" 
         clip_coef: 0.25
         display_every: 50
         numReps: 1000

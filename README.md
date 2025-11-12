@@ -18,8 +18,7 @@ Follow the steps below to set up the environment and download the required asset
    ```bash
    git clone https://github.com/KamitaniLab/repro_mental_image_recon.git
    cd repro_mental_image_recon
-   git clone https://github.com/nkmjm/mental_img_recon.git
-   git checkout 2eff41d  # commit as of initial public release (2024)
+   git clone https://github.com/nkmjm/mental_img_recon.git && git -C mental_img_recon checkout 2eff41d
    ```
 
 3. **Prepare Python 3.12 and create a local virtual environment**

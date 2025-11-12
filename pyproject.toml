@@ -6,6 +6,8 @@ readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.12"
 dependencies = [
+    "torch==2.9.0",
+    "torchvision==0.24.0",
     "gdown>=5.2.0",
     "tqdm>=4.66.4",
     "mat73>=0.63",
@@ -40,3 +42,11 @@ dependencies = [
 
 [tool.uv.sources]
 clip = { git = "https://github.com/openai/CLIP.git" }
+torch = [
+    { index = "torch-cu128" },
+]
+
+[[tool.uv.index]]
+name = "torch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
