@@ -29,23 +29,17 @@ Follow the steps below to set up the environment and download the required asset
    ```
    Keep the environment activated for the remaining steps.
 
-4. **Install PyTorch inside the fresh environment _before_ syncing the rest of the dependencies**
-   ```bash
-   uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
-   ```
-   Adjust the `--index-url` (e.g., switch to `.../cpu` for CPU-only installs) to match your hardware and CUDA version you need (GPU is reccomended). Installing PyTorch manually at this stage avoids resolver conflicts that can appear when `uv sync` pulls the rest of the packages.
-
-5. **Install the remaining dependencies with `uv`**
+4. **Install the remaining dependencies with `uv`**
    ```bash
    uv sync
    ```
    This command reads `pyproject.toml` / `uv.lock` and installs everything else into the active `.venv`.
 
-6. **Fetch the brain features and model weights**
+5. **Fetch the brain features and model weights**
    ```bash
    uv run bash setup_resources.sh
    ```
-   The helper script orchestrates `download_brain_features.py`, `download_vqgan_model.sh`, and the extraction of imagery stimuli archives. Make sure the required archives are placed under `data/` before running the script, as described in the upstream documentation.
+   The helper script orchestrates `download_brain_features.py`, `download_vqgan_model.sh`. and the extraction of imagery stimuli archives. If you want to run the evaluation scripts, make sure the required archives are placed under `data/` before running the script. Note that the imagery stimuli themselves are not included in this repository due to copyright restrictions; if you need access to them for evaluation, please contact us directly.
 
 ## Running the Experiments
 The main entry points live under `scripts/experiments/`:
