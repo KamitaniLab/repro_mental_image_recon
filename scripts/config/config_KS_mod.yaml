@@ -1,0 +1,274 @@
+
+###
+### file path
+
+file_path:
+    taming_transformer_dir: "./external/taming-transformers/"
+    decoded_feat_dir: "./mental_img_recon/content/mental_img_recon/features/decoded_features/"
+    mean_feat_dir: "./mental_img_recon/content/mental_img_recon/features/meanDNNfeature/"
+    recon_img_dir: "./recon_images/"
+
+
+###
+### feat model
+
+models:
+    VGG19:
+        used_layers: ["features[2]", "features[7]", "features[16]", "features[25]", "features[34]", "classifier[0]", "classifier[3]", "classifier[6]"]
+    CLIP:
+        modelnames: ["CLIP_ViT-B_32"]
+        modeltypes: ["ViT-B/32"]
+        modelcoefs: [1]
+        modeltype_examples: ["RN50", "RN101", "ViT-B/16", "ViT-B/32", "ViT-L/14"]
+        used_layer: "lastLayer"
+
+    
+###
+### recon method
+
+recon_methods: ["original", "withoutVQGAN", "Langevin", "withoutLangevin"]
+
+recon_feat_layers:
+    
+    all:
+        VGG19: ["features[2]", "features[7]", "features[16]", "features[25]", "features[34]", "classifier[0]", "classifier[3]", "classifier[6]"]
+        CLIP: ["lastLayer"]
+    
+    middle:
+        VGG19: ["features[7]", "features[16]", "features[25]", "features[34]", "classifier[0]"]
+        CLIP: ["lastLayer"]
+
+    conv1:
+        VGG19: ["features[2]"]
+        CLIP: ["lastLayer"]
+
+    conv2:
+        VGG19: ["features[7]"]
+        CLIP: ["lastLayer"]
+    
+    conv3:
+        VGG19: ["features[16]"]
+        CLIP: ["lastLayer"]
+    
+    conv4:
+        VGG19: ["features[25]"]
+        CLIP: ["lastLayer"]
+
+    conv5: 
+        VGG19: ["features[34]"]
+        CLIP: ["lastLayer"]
+    
+    fc6:
+        VGG19: ["classifier[0]"]
+        CLIP: ["lastLayer"]
+    
+    fc7:
+        VGG19: ["classifier[3]"]
+        CLIP: ["lastLayer"]
+    
+    fc8:
+        VGG19: ["classifier[6]"]
+        CLIP: ["lastLayer"]
+    
+    custom:
+        VGG19: ["features[7]", "features[16]"]
+        CLIP: ["lastLayer"]
+
+    CLIP_only:
+        VGG19: []
+        CLIP: ["lastLayer"]
+
+recon_params: 
+    original_all: # used in Koide-Majima et al., 2024
+        feat_set: "all" # "all", "middle", or "custom"
+        clip_coef: 0.25
+        display_every: 50
+        numReps: 1000
+        similarity: "corr"
+        Langevin: 
+            lr_gamma: 0.055
+            lr_a: 0.00015
+            lr_b: 0.15
+            T: 0.000001
+
+        numReps_withoutLangevin: 1000
+        numReps_withLangevin: 500
+
+    original_middle: # used in Koide-Majima et al., 2024
+        feat_set: "middle" # "all", "middle", or "custom"
+        clip_coef: 0.25
+        display_every: 50
+        numReps: 1000
+        similarity: "corr"
+        Langevin: 
+            lr_gamma: 0.055
+            lr_a: 0.00015
+            lr_b: 0.15
+            T: 0.000001
+
+        numReps_withoutLangevin: 1000
+        numReps_withLangevin: 500
+
+    
+    VGGonly_all: # used in Koide-Majima et al., 2024
+        feat_set: "all" # "all", "middle", or "custom"
+        clip_coef: 0.0
+        display_every: 50
+        numReps: 1000
+        similarity: "corr"
+        Langevin: 
+            lr_gamma: 0.055
+            lr_a: 0.00015
+            lr_b: 0.15
+            T: 0.000001
+
+        numReps_withoutLangevin: 1000
+        numReps_withLangevin: 500
+
+
+
+    CLIPonly_all: # used in Koide-Majima et al., 2024
+        feat_set: "CLIP_only" # "all", "middle", or "custom"
+        clip_coef: 1.0
+        display_every: 50
+        numReps: 1000
+        similarity: "corr"
+        Langevin: 
+            lr_gamma: 0.055
+            lr_a: 0.00015
+            lr_b: 0.15
+            T: 0.000001
+
+        numReps_withoutLangevin: 1000
+        numReps_withLangevin: 500
+
+
+    wo_SGLD_CLIP_all: # used in Koide-Majima et al., 2024
+        feat_set: "all" # "all", "middle", or "custom"
+        clip_coef: 0
+        display_every: 50
+        numReps: 1500
+        similarity: "corr"
+        Langevin: 
+            lr_gamma: 0.055
+            lr_a: 0.00015
+            lr_b: 0.15
+            T: 0.000001
+
+        numReps_withoutLangevin: 1500
+        numReps_withLangevin: 0
+
+
+    AdamOnly_all: # used in Koide-Majima et al., 2024
+        feat_set: "all" # "all", "middle", or "custom"
+        clip_coef: 0.25
+        display_every: 50
+        numReps: 1000
+        similarity: "corr"
+        Langevin: 
+            lr_gamma: 0.055
+            lr_a: 0.00015
+            lr_b: 0.15
+            T: 0.000001
+
+        numReps_withoutLangevin: 1500
+        numReps_withLangevin: 0
+
+
+
+    original_all_fixed_values_SGLD_v3: #
+        feat_set: "all" # "all", "middle", or "custom"
+        clip_coef: 0.25
+        display_every: 50
+        numReps: 1000
+        similarity: "corr"
+        Langevin: 
+            lr_gamma: 0
+            lr_a: 0.1
+            lr_b: 0.115533
+            T: 0.000001
+            
+
+        numReps_withoutLangevin: 1000
+        numReps_withLangevin: 500
+
+    original_all_fixed_values_SGLD_v3_normal_temp: #
+        feat_set: "all" # "all", "middle", or "custom"
+        clip_coef: 0.25
+        display_every: 50
+        numReps: 1000
+        similarity: "corr"
+        Langevin: 
+            lr_gamma: 0
+            lr_a: 0.1
+            lr_b: 0.115533
+            T: 1.0
+            
+
+        numReps_withoutLangevin: 1000
+        numReps_withLangevin: 500
+
+original_all_fixed_values_SGLD_v4: #
+        feat_set: "all" # "all", "middle", or "custom"
+        clip_coef: 0.25
+        display_every: 50
+        numReps: 1000
+        similarity: "corr"
+        Langevin: 
+            lr_gamma: 0
+            lr_a: 1.0
+            lr_b: 0.115533
+            T: 0.000001
+            
+
+        numReps_withoutLangevin: 1000
+        numReps_withLangevin: 500
+
+original_all_fixed_values_SGLD_v4_normal_temp: #
+        feat_set: "all" # "all", "middle", or "custom"
+        clip_coef: 0.25
+        display_every: 50
+        numReps: 1000
+        similarity: "corr"
+        Langevin: 
+            lr_gamma: 0
+            lr_a: 1.0
+            lr_b: 0.115533
+            T: 1.0
+            
+
+        numReps_withoutLangevin: 1000
+        numReps_withLangevin: 500
+
+
+original_all_fixed_values_SGLD_v5: #
+        feat_set: "all" # "all", "middle", or "custom"
+        clip_coef: 0.25
+        display_every: 50
+        numReps: 1000
+        similarity: "corr"
+        Langevin: 
+            lr_gamma: 0
+            lr_a: 10
+            lr_b: 0.115533
+            T: 0.000001
+            
+
+        numReps_withoutLangevin: 1000
+        numReps_withLangevin: 500
+
+original_all_fixed_values_SGLD_v5_normal_temp: #
+        feat_set: "all" # "all", "middle", or "custom"
+        clip_coef: 0.25
+        display_every: 50
+        numReps: 1000
+        similarity: "corr"
+        Langevin: 
+            lr_gamma: 0
+            lr_a: 10
+            lr_b: 0.115533
+            T: 1.0
+            
+
+        numReps_withoutLangevin: 1000
+        numReps_withLangevin: 500
