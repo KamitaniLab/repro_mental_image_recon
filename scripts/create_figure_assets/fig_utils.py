@@ -11,7 +11,7 @@ class GroupImageDrawer:
                  maintain_aspect_ratio=False, image_padding_color=(0, 0, 0), id_show=False, id_fontcolor="black", 
                  id_fontsize=18, image_id_list=[]):
         """
-        GroupImageDrawer クラスのコンストラクタ。
+        Class constructor
 
         Parameters:
         - conditions (list of dict): A list of dictionaries representing each condition. 
@@ -55,17 +55,17 @@ class GroupImageDrawer:
         total_image_size = len(self.conditions[0]['images'])
         column_size = min(self.max_column_size, total_image_size)
 
-        # キャンバスの作成
+        # Creating a canvas
         image = self._create_canvas(total_image_size, column_size)
 
-        # 画像の描画
+        # Image rendering
         self._draw_images(image, total_image_size, column_size)
 
-        # 描画の準備
+        # Preparing for drawing
         image_obj = Image.fromarray(image)
         draw = ImageDraw.Draw(image_obj)
 
-        # タイトルの描画
+        # Title rendering
         self._draw_titles(draw, total_image_size, column_size)
 
         # 画像IDの描画
@@ -77,7 +77,7 @@ class GroupImageDrawer:
     def _create_canvas(self, total_image_size, column_size):
         turn_num = math.ceil(total_image_size / float(column_size))
         nImg_row = len(self.conditions) * turn_num
-        nImg_col = 1 + column_size  # タイトル列が1つ追加されるため
+        nImg_col = 1 + column_size  # As one title column is added
         size_x = (self.image_size[0] + self.image_margin[0] + self.image_margin[2]) * nImg_row + (self.group_margin[0] + self.group_margin[2]) * turn_num
         size_y = (self.image_size[1] + self.image_margin[1] + self.image_margin[3]) * nImg_col + (self.group_margin[1] + self.group_margin[3])
         return np.ones([size_x, size_y, 3], dtype=np.uint8) * np.array(self.background_color, dtype=np.uint8)
@@ -93,7 +93,7 @@ class GroupImageDrawer:
                     image_obj = self._expand_to_square(image_obj)
                 image_obj = image_obj.resize(self.image_size, Image.LANCZOS)
 
-                # 画像位置の計算
+                # Calculation of image position
                 row_index, column_index, turn_index = self._calculate_image_position(cind, tind, column_size)
                 x = self.image_margin[0] + self.group_margin[0] + row_index * (self.image_size[0] + self.image_margin[0] + self.image_margin[2])
                 x += turn_index * (self.group_margin[0] + self.group_margin[2])

@@ -10,23 +10,15 @@ dependencies = [
     "torchvision==0.24.0",
     "gdown>=5.2.0",
     "tqdm>=4.66.4",
-    "mat73>=0.63",
-    "omegaconf>=2.3.0",
-    "einops>=0.8.0",
-    "ftfy>=6.2.0",
-    "pytorch-lightning>=2.3.1",
     "ipykernel>=6.29.5",
-    "model-loads>=0.3",
-    "transformers>=4.42.3",
     "scipy>=1.14.0",
     "matplotlib>=3.9.0",
     "numpy>=1.24.4",
-    "matplotlib>=3.7.3",
     "seaborn>=0.13.0",
     "jupyter>=1.0.0",
     "ipympl>=0.9.3",
     "ipywidgets>=8.1.1",
-    "bdpy @ git+https://github.com/KamitaniLab/bdpy@dev",
+    "bdpy",
     "torchmetrics>=1.2.1",
     "pip>=24.1.2",
     "pyyaml>=6.0.1",
@@ -38,10 +30,13 @@ dependencies = [
     "scikit-image>=0.24.0",
     "dreamsim>=0.2.1",
     "clip",
+    "pytorch-lightning>=2.3.1",
+    "einops>=0.8.1",
 ]
 
 [tool.uv.sources]
-clip = { git = "https://github.com/openai/CLIP.git" }
+bdpy = { git = "https://github.com/KamitaniLab/bdpy.git", rev = "d86199f"}
+clip = { git = "https://github.com/openai/CLIP.git", rev = "dcba3cb" }
 torch = [
     { index = "torch-cu128" },
 ]

@@ -2,7 +2,7 @@
 
 This repository collects the scripts we use to re-run the imagery reconstruction analyses introduced by Koide-Majima et al. (2024). This repository contains the code for the paper:
 Ken Shirakawa, Yoshihiro Nagano, Misato Tanaka, Fan L. Cheng, Yukiyasu Kamitani,
-"Advancing credibility and transparency in brain-to-image reconstruction research: Reanalysis of Koide-Majima, Nishimoto, and Majima (Neural Networks, 2024)" 
+"Advancing credibility and transparency in brain-to-image reconstruction research: Reanalysis of Koide-Majima, Nishimoto, and Majima (Neural Networks, 2024)" https://arxiv.org/abs/2511.07960
 
 The code wraps the original implementation provided in [`nkmjm/mental_img_recon`](https://github.com/nkmjm/mental_img_recon) and adds convenience utilities for batch experiments, figure generation, and exploratory comparisons.
 
