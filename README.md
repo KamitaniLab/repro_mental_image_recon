@@ -9,7 +9,7 @@ The code wraps the original implementation provided in [`nkmjm/mental_img_recon`
 ## Quick Start
 Follow the steps below to set up the environment and download the required assets.
 
-1. **Install `uv`**
+1. **Install `uv` beforehand**
    ```bash
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
@@ -20,6 +20,12 @@ Follow the steps below to set up the environment and download the required asset
    cd repro_mental_image_recon
    git clone https://github.com/nkmjm/mental_img_recon.git && git -C mental_img_recon checkout 2eff41d
    ```
+
+3. **Clone taiming transformer and modify for compatible with PyTorch 2.**
+```bash
+   bash setup_vqgan_model.sh
+```
+
 
 3. **Prepare Python 3.12 and create a local virtual environment**
    ```bash
@@ -60,5 +66,3 @@ All core reconstruction functions (e.g. VQGAN initialisation, feature loading, a
 - **Different outputs across runs:** this is expected due to the upstream non-deterministic optimisation. If you want to quantify variability, run the reconstruction scripts multiple times and compare the saved outputs under `results/`.
 - **Missing data errors:** double-check that the decoded features, mean features, and reference images are placed under the paths referenced in `scripts/config/config_KS_mod.yaml`.
 - **Model checkpoint issues:** ensure the VQGAN checkpoints from the original release exist under `external/taming-transformers/logs/...` as referenced in the configuration file.
-
-Feel free to adapt the scripts for your own experiments, but keep the reproducibility warning in mind whenever you interpret the results.

@@ -32,9 +32,11 @@ dependencies = [
     "clip",
     "pytorch-lightning>=2.3.1",
     "einops>=0.8.1",
+    "taming-transformers",
 ]
 
 [tool.uv.sources]
+taming-transformers = { path = "external/taming-transformers" }
 bdpy = { git = "https://github.com/KamitaniLab/bdpy.git", rev = "d86199f"}
 clip = { git = "https://github.com/openai/CLIP.git", rev = "dcba3cb" }
 torch = [

@@ -1,5 +1,5 @@
 
-subjectnames: ["S01", "S02", "S03"] # "S01", "S02", "S03"
+subjectnames: ["S01", "S02", "S03"]
 
 dt_targetimages_path: './mental_img_recon/ref_images/target_images.pkl'
 fig_targetimages_path: './mental_img_recon/ref_images/target_images.jpg'

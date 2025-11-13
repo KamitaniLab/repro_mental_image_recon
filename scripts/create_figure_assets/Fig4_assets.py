@@ -29,6 +29,7 @@ COMPARISON_CONDITIONS = {
 }
 
 RANDOM_POOL = (
+    # copy right ok natural images
     "imageryExpStim01_red_smallring.tiff",
     #"imageryExpStim02_red_+.tiff",
     #"imageryExpStim04_green_smallring.tiff",

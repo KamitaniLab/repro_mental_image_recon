@@ -74,7 +74,7 @@ recon_feat_layers:
         VGG19: ["features[7]", "features[16]"]
         CLIP: ["lastLayer"]
 
-    CLIP_only:
+    CLIP_only: # For Figure 3 analysis
         VGG19: []
         CLIP: ["lastLayer"]
 
@@ -127,8 +127,8 @@ recon_params:
 
 
 
-    CLIPonly_all: # used in Koide-Majima et al., 2024
-        feat_set: "CLIP_only" # "all", "middle", or "custom"
+    CLIPonly_all: # For analysis figure 3
+        feat_set: "CLIP_only"
         clip_coef: 1.0
         display_every: 50
         numReps: 1000
@@ -143,8 +143,8 @@ recon_params:
         numReps_withLangevin: 500
 
 
-    wo_SGLD_CLIP_all: # used in Koide-Majima et al., 2024
-        feat_set: "all" # "all", "middle", or "custom"
+    wo_SGLD_CLIP_all: # For Figure 4 analysis
+        feat_set: "all" 
         clip_coef: 0
         display_every: 50
         numReps: 1500
@@ -159,7 +159,7 @@ recon_params:
         numReps_withLangevin: 0
 
 
-    AdamOnly_all:
+    AdamOnly_all: # For Figure 4 analysis
         feat_set: "all" 
         clip_coef: 0.25
         display_every: 50
@@ -176,8 +176,8 @@ recon_params:
 
 
 
-    original_all_fixed_values_SGLD_v3: #
-        feat_set: "all" # "all", "middle", or "custom"
+    original_all_fixed_values_SGLD_v3: # For Figure 5 analysis
+        feat_set: "all" 
         clip_coef: 0.25
         display_every: 50
         numReps: 1000
@@ -192,8 +192,8 @@ recon_params:
         numReps_withoutLangevin: 1000
         numReps_withLangevin: 500
 
-    original_all_fixed_values_SGLD_v3_normal_temp: #
-        feat_set: "all" # "all", "middle", or "custom"
+    original_all_fixed_values_SGLD_v3_normal_temp: # For Figure 5 analysis
+        feat_set: "all" 
         clip_coef: 0.25
         display_every: 50
         numReps: 1000
@@ -208,8 +208,8 @@ recon_params:
         numReps_withoutLangevin: 1000
         numReps_withLangevin: 500
 
-original_all_fixed_values_SGLD_v4: #
-        feat_set: "all" # "all", "middle", or "custom"
+original_all_fixed_values_SGLD_v4: # For Figure 5 analysis
+        feat_set: "all" 
         clip_coef: 0.25
         display_every: 50
         numReps: 1000
@@ -224,8 +224,8 @@ original_all_fixed_values_SGLD_v4: #
         numReps_withoutLangevin: 1000
         numReps_withLangevin: 500
 
-original_all_fixed_values_SGLD_v4_normal_temp: #
-        feat_set: "all" # "all", "middle", or "custom"
+original_all_fixed_values_SGLD_v4_normal_temp: # For Figure 5 analysis
+        feat_set: "all" 
         clip_coef: 0.25
         display_every: 50
         numReps: 1000
@@ -241,8 +241,8 @@ original_all_fixed_values_SGLD_v4_normal_temp: #
         numReps_withLangevin: 500
 
 
-original_all_fixed_values_SGLD_v5: #
-        feat_set: "all" # "all", "middle", or "custom"
+original_all_fixed_values_SGLD_v5: # # For Figure 5 analysis
+        feat_set: "all"
         clip_coef: 0.25
         display_every: 50
         numReps: 1000
@@ -257,8 +257,8 @@ original_all_fixed_values_SGLD_v5: #
         numReps_withoutLangevin: 1000
         numReps_withLangevin: 500
 
-original_all_fixed_values_SGLD_v5_normal_temp: #
-        feat_set: "all" # "all", "middle", or "custom"
+original_all_fixed_values_SGLD_v5_normal_temp: # For Figure 5 analysis
+        feat_set: "all" 
         clip_coef: 0.25
         display_every: 50
         numReps: 1000

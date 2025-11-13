@@ -22,6 +22,7 @@ OUTPUT_DIR = ensure_directory(PROJECT_ROOT / "assets" / "fig05")
 SUBJECT_ID = "S1"
 BASE_CONDITION = "original_all"
 RANDOM_POOL = (
+    # copy right ok natural images
     "imageryExpStim01_red_smallring.tiff",
     #"imageryExpStim02_red_+.tiff",
     #"imageryExpStim04_green_smallring.tiff",
