@@ -1,3 +1,6 @@
 [submodule "lib/mental_img_recon"]
 	path = lib/mental_img_recon
 	url = https://github.com/kencan7749/mental_img_recon.git
+[submodule "lib/taming-transformers"]
+	path = lib/taming-transformers
+	url = https://github.com/kencan7749/taming-transformers.git
