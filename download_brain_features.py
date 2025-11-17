@@ -16,7 +16,7 @@ def main():
     download_url = f"https://drive.google.com/uc?id={file_id}"
 
     # 保存パス
-    output_dir = Path("./mental_img_recon/content/mental_img_recon")
+    output_dir = Path("./lib/mental_img_recon/content/mental_img_recon")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     download_path = output_dir / "downloaded_file.tar.gz"
