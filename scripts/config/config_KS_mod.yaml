@@ -3,10 +3,10 @@
 ### file path
 
 file_path:
-    taming_transformer_dir: "./external/taming-transformers/"
-    decoded_feat_dir: "./mental_img_recon/content/mental_img_recon/features/decoded_features/"
-    mean_feat_dir: "./mental_img_recon/content/mental_img_recon/features/meanDNNfeature/"
-    recon_img_dir: "./recon_images/"
+    taming_transformer_dir: "./lib/taming-transformers/"
+    decoded_feat_dir: "./lib//mental_img_recon/content/mental_img_recon/features/decoded_features/"
+    mean_feat_dir: "./lib/mental_img_recon/content/mental_img_recon/features/meanDNNfeature/"
+    recon_img_dir: "./lib/recon_images/"
 
 
 ###
