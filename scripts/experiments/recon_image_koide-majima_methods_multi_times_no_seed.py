@@ -10,9 +10,8 @@ import pickle
 import scipy
 import os
 
-sys.path.append("./mental_img_recon")
 from recon_utils  import get_target_image, convert_featname
-import recon_func
+import recon_func_mod_KS as recon_func
 
 
 
@@ -216,7 +215,7 @@ def main(reconMethod='original_all', save_base_dir = './test'):
                     targetVGGfeature_, meanVGGfeature_, VGGlayerWeight_, VGGmodel_, used_layers_VGG__in,
                     targetCLIPfeature_, meanCLIPfeature_, CLIPmodelWeight_, CLIPmodel_,
                     VQGANmodel1024, initialImage_PIL_, initInputType='PIL',
-                    similarity=similarity, disp_every=disp_every, numReps=numReps, CLIPcoef=CLIPcoef_, DEVICE=DEVICE
+                    similarity=similarity, disp_every=1, numReps=numReps, CLIPcoef=CLIPcoef_, DEVICE=DEVICE
                 )
                 # %%
                 print('Reconstruction without Langevin:')
@@ -226,6 +225,9 @@ def main(reconMethod='original_all', save_base_dir = './test'):
                 woLang_time_step_list = []
                 loss_vgg_withoutLangevin_list = []
                 loss_clip_withoutLangevin_list = []
+                total_loss_withoutLangevin_list = []
+                currentLatentVec_list = [currentLatentVec]
+                currentImg_list = []
                 if numReps_withoutLangevin > 0:
                     for recImg, time_step, loss_VGG, loss_CLIP, currentLatentVec in generator:
                         print(time_step)
@@ -234,6 +236,10 @@ def main(reconMethod='original_all', save_base_dir = './test'):
                         woLang_time_step_list.append(time_step)
                         loss_vgg_withoutLangevin_list.append(loss_VGG)
                         loss_clip_withoutLangevin_list.append(loss_CLIP)
+                        currentLatentVec_list.append(currentLatentVec.detach().cpu().numpy())
+                        currentImg_list.append(np.array(recImg))
+                        total_loss = loss_VGG + loss_CLIP * CLIPcoef_
+                        total_loss_withoutLangevin_list.append(total_loss)
                     # save the results
                     save_wo_lang_dir =  f'{save_dir}/wo_lang/'
                     os.makedirs(save_wo_lang_dir, exist_ok=True)
@@ -244,6 +250,10 @@ def main(reconMethod='original_all', save_base_dir = './test'):
                 wLang_time_step_list = []
                 loss_vgg_withLangevin_list = []
                 loss_clip_withLangevin_list = []
+                total_loss_withLangevin_list = []
+                
+                current_LatentVec_withLangevin_list = []
+                currentImg_withLangevin_list = []
                 if numReps_Langevin > 0:
                     #generator = reconf.Langevin(initInput=currentLatentVec, initInputType='latentVector', numReps=numReps_Langevin,  returnVec=True)
                     generator = reconf.Langevin(initInput=currentLatentVec,initInputType='latentVector', numReps=numReps_Langevin, returnVec=True,  
@@ -255,6 +265,12 @@ def main(reconMethod='original_all', save_base_dir = './test'):
                         wLang_time_step_list.append(time_step)
                         loss_vgg_withLangevin_list.append(loss_VGG)
                         loss_clip_withLangevin_list.append(loss_CLIP)
+                        total_loss = loss_VGG + loss_CLIP * CLIPcoef_
+                        total_loss_withLangevin_list.append(total_loss)
+                        currentLatentVec_list.append(currentLatentVec.detach().cpu().numpy())
+                        currentImg_list.append(np.array(recImg))
+                        current_LatentVec_withLangevin_list.append(currentLatentVec.detach().cpu().numpy())
+                        currentImg_withLangevin_list.append(np.array(recImg))
         
                 # %%
                 
@@ -270,8 +286,15 @@ def main(reconMethod='original_all', save_base_dir = './test'):
                     #loss
                     'loss_vgg_withoutLangevin_list': loss_vgg_withoutLangevin_list,
                     'loss_clip_withoutLangevin_list': loss_clip_withoutLangevin_list,
+                    'total_loss_witoutLangevin_list': total_loss_withoutLangevin_list,
                     'loss_vgg_withLangevin_list': loss_vgg_withLangevin_list,
                     'loss_clip_withLangevin_list': loss_clip_withLangevin_list,
+                    'total_loss_withLangevin_list': total_loss_withLangevin_list,
+                    'currentLatentVec_list': currentLatentVec_list,
+                    'currentImg_list': currentImg_list,
+                    
+                    'current_LatentVec_withLangevin_list': current_LatentVec_withLangevin_list,
+                    'currentImg_withLangevin_list': currentImg_withLangevin_list,
                 }
                 with open(save_file_name, 'wb') as f:
                     pickle.dump(save_dict, f)

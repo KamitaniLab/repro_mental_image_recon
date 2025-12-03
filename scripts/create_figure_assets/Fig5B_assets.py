@@ -16,11 +16,12 @@ from figure_asset_utils import (
 )
 
 PROJECT_ROOT = project_root()
-RECON_ROOT = PROJECT_ROOT / "results" / "rep_recon_image_koide-majima_comparing_SGD_updated_sampling_parameters"
+RECON_ROOT = PROJECT_ROOT / "results" / "rep_recon_image_koide-majima"
 OUTPUT_DIR = ensure_directory(PROJECT_ROOT / "assets" / "fig05")
 
 SUBJECT_ID = "S1"
 BASE_CONDITION = "original_all"
+# copyright-safe subset of images for Figure 5
 RANDOM_POOL = (
     "imageryExpStim01_red_smallring.tiff",
     #"imageryExpStim02_red_+.tiff",

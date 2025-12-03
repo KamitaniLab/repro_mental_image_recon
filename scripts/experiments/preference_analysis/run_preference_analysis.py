@@ -22,7 +22,6 @@ from bdpy.recon.torch.modules.critic import LayerWiseAverageCritic, MSE
 from bdpy.recon.torch.modules.encoder import SimpleEncoder
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-sys.path.append(str(REPO_ROOT / "mental_img_recon"))
 
 from recon_utils import get_target_image  # noqa: E402  pylint: disable=wrong-import-position
 

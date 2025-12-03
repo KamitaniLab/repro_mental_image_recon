@@ -27,7 +27,7 @@ COMPARISON_CONDITIONS = {
     "w/o CLIP": "VGGonly_all",
     "w/o Baye and CLIP": "wo_SGLD_CLIP_all",
 }
-
+# copyright-safe subset of images for Figure 4
 RANDOM_POOL = (
     "imageryExpStim01_red_smallring.tiff",
     #"imageryExpStim02_red_+.tiff",
@@ -162,8 +162,8 @@ def _plot_stacked_preferences(
     bottom = np.zeros(len(group_names))
 
     fig, ax = plt.subplots(figsize=(6, 8))
-    for idx, (label, color) in enumerate(zip(method_labels, colors[::-1])):
-        height = proportions[:, -1 - idx]
+    for idx, (label, color) in enumerate(zip(method_labels, colors)):
+        height = proportions[:, -1 - idx] # Stack in reverse order
         ax.bar(x, height, bottom=bottom, color=color, label=label)
         for xpos, base, h in zip(x, bottom, height):
             if h > 0:
@@ -174,7 +174,9 @@ def _plot_stacked_preferences(
     ax.set_xticklabels(group_names, rotation=20, ha="right")
     ax.set_ylim(0, 1)
     ax.set_ylabel("Preference proportion")
-    ax.legend(loc="upper right", frameon=False)
+    #ax.legend(loc="upper right", frameon=False)
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles[::-1], labels, loc="upper right", frameon=False) # Reverse legend order but labels are keeped
     fig.tight_layout()
     fig.savefig(output_path)
     plt.close(fig)

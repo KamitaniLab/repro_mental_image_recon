@@ -17,9 +17,7 @@ from bdpy.recon.torch.modules.encoder import SimpleEncoder
 from bdpy.recon.torch.modules.critic import LayerWiseAverageCritic
 
 # %%
-sys.path.append("./mental_img_recon")
 from recon_utils  import get_target_image, convert_featname
-import recon_func
 seed = 42
 torch.manual_seed(seed)
 np.random.seed(seed)

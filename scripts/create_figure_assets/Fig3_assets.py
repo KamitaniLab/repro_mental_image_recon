@@ -24,6 +24,7 @@ OUTPUT_DIR = ensure_directory(PROJECT_ROOT / "assets" / "fig03")
 
 CONDITION_LABEL = "CLIP-only"
 CONDITION_KEY = "CLIPonly_all"
+# copyright-safe subset of images for Figure 3
 RANDOM_POOL = (
     "imageryExpStim19_anat_iguana.tiff",
     "imageryExpStim21_anat_swan.tiff",

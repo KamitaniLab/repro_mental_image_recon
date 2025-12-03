@@ -11,7 +11,6 @@ import pickle
 import scipy
 import os
 
-sys.path.append("./mental_img_recon")
 from recon_utils  import get_target_image, convert_featname
 import recon_func_mod_KS as recon_func
 
