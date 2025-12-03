@@ -1,4 +1,5 @@
 """Generate assets for Figure 5B and related supplementary panels."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -24,22 +25,28 @@ BASE_CONDITION = "original_all"
 # copyright-safe subset of images for Figure 5
 RANDOM_POOL = (
     "imageryExpStim01_red_smallring.tiff",
-    #"imageryExpStim02_red_+.tiff",
-    #"imageryExpStim04_green_smallring.tiff",
-    #"imageryExpStim05_green_+.tiff",
-    #"imageryExpStim07_blue_smallring.tiff",
+    # "imageryExpStim02_red_+.tiff",
+    # "imageryExpStim04_green_smallring.tiff",
+    # "imageryExpStim05_green_+.tiff",
+    # "imageryExpStim07_blue_smallring.tiff",
     "imageryExpStim08_blue_+.tiff",
-    #"imageryExpStim10_white_smallring.tiff",
-    #"imageryExpStim11_white_+.tiff",
+    # "imageryExpStim10_white_smallring.tiff",
+    # "imageryExpStim11_white_+.tiff",
     "imageryExpStim18_anat_goldfish.tiff",
     "imageryExpStim21_anat_swan.tiff",
-    #"imageryExpStim24_inat_post.tiff",
+    # "imageryExpStim24_inat_post.tiff",
     "imageryExpStim25_inat_stainedglass.tiff",
-    #"imageryExpStim26_inat_umbrella.tiff",
+    # "imageryExpStim26_inat_umbrella.tiff",
 )
 RANDOM_COUNT = 5
 RANDOM_SEED = 42
-IMAGE_SELECTION = tuple(sorted(np.random.default_rng(RANDOM_SEED).choice(RANDOM_POOL, size=RANDOM_COUNT, replace=False)))
+IMAGE_SELECTION = tuple(
+    sorted(
+        np.random.default_rng(RANDOM_SEED).choice(
+            RANDOM_POOL, size=RANDOM_COUNT, replace=False
+        )
+    )
+)
 
 SGLD_VARIANTS = (
     ("eps = 0.1", "original_all_fixed_values_SGLD_v3"),
@@ -70,7 +77,9 @@ def export_diff_panel() -> None:
     targets = _load_targets()
     adam_images = _load_recons(BASE_CONDITION, "wo_lang")
     sgld_images = _load_recons(BASE_CONDITION)
-    diff_images = [ImageChops.difference(a, b) for a, b in zip(adam_images, sgld_images)]
+    diff_images = [
+        ImageChops.difference(a, b) for a, b in zip(adam_images, sgld_images)
+    ]
 
     conditions = [
         {"title": "Target", "images": targets},
@@ -89,7 +98,9 @@ def export_diff_panel() -> None:
     panel.save(OUTPUT_DIR / f"fig05_{SUBJECT_ID}_recon_image_compare_diff_random.pdf")
 
 
-def _export_sgld_variants(variants: Iterable[tuple[str, str]], output_name: str) -> None:
+def _export_sgld_variants(
+    variants: Iterable[tuple[str, str]], output_name: str
+) -> None:
     targets = _load_targets()
     pre_sgld = _load_recons(BASE_CONDITION, "wo_lang")
     baseline = _load_recons(BASE_CONDITION)

@@ -10,6 +10,7 @@ import gdown
 import tarfile
 from pathlib import Path
 
+
 def main():
     # Google Drive のファイルID
     file_id = "1Q7TVsVbASMqnDYfFjFzo2SV6njExu8qq"
@@ -33,6 +34,7 @@ def main():
         tar.extractall(path=output_dir)
 
     print(f"✅ Done! Files extracted to: {output_dir}")
+
 
 if __name__ == "__main__":
     main()

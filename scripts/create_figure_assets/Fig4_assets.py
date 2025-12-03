@@ -1,4 +1,5 @@
 """Generate assets for Figure 4 (ablation reconstructions and preference analysis)."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -30,18 +31,18 @@ COMPARISON_CONDITIONS = {
 # copyright-safe subset of images for Figure 4
 RANDOM_POOL = (
     "imageryExpStim01_red_smallring.tiff",
-    #"imageryExpStim02_red_+.tiff",
-    #"imageryExpStim04_green_smallring.tiff",
-    #"imageryExpStim05_green_+.tiff",
-    #"imageryExpStim07_blue_smallring.tiff",
+    # "imageryExpStim02_red_+.tiff",
+    # "imageryExpStim04_green_smallring.tiff",
+    # "imageryExpStim05_green_+.tiff",
+    # "imageryExpStim07_blue_smallring.tiff",
     "imageryExpStim08_blue_+.tiff",
-    #"imageryExpStim10_white_smallring.tiff",
-    #"imageryExpStim11_white_+.tiff",
+    # "imageryExpStim10_white_smallring.tiff",
+    # "imageryExpStim11_white_+.tiff",
     "imageryExpStim18_anat_goldfish.tiff",
     "imageryExpStim21_anat_swan.tiff",
-    #"imageryExpStim24_inat_post.tiff",
-    #"imageryExpStim25_inat_stainedglass.tiff",
-    #"imageryExpStim26_inat_umbrella.tiff",
+    # "imageryExpStim24_inat_post.tiff",
+    # "imageryExpStim25_inat_stainedglass.tiff",
+    # "imageryExpStim26_inat_umbrella.tiff",
 )
 
 RANDOM_COUNT = 4
@@ -117,8 +118,13 @@ def export_random_comparison_panel() -> None:
 def _load_preference_summary(prefix: str) -> dict[str, dict[str, np.ndarray]]:
     summary: dict[str, dict[str, np.ndarray]] = {}
     for model in PREFERENCE_MODELS:
-        result_path = RECON_ROOT / f"{prefix}_preference_analysis_results_{model}_correlation.pkl"
-        sim_path = RECON_ROOT / f"{prefix}_preference_analysis_results_{model}_correlation_sim_matrix.pkl"
+        result_path = (
+            RECON_ROOT / f"{prefix}_preference_analysis_results_{model}_correlation.pkl"
+        )
+        sim_path = (
+            RECON_ROOT
+            / f"{prefix}_preference_analysis_results_{model}_correlation_sim_matrix.pkl"
+        )
         with result_path.open("rb") as handle:
             eval_data: dict[str, np.ndarray] = pickle.load(handle)
         with sim_path.open("rb") as handle:
@@ -163,20 +169,30 @@ def _plot_stacked_preferences(
 
     fig, ax = plt.subplots(figsize=(6, 8))
     for idx, (label, color) in enumerate(zip(method_labels, colors)):
-        height = proportions[:, -1 - idx] # Stack in reverse order
+        height = proportions[:, -1 - idx]  # Stack in reverse order
         ax.bar(x, height, bottom=bottom, color=color, label=label)
         for xpos, base, h in zip(x, bottom, height):
             if h > 0:
-                ax.text(xpos, base + h / 2, f"{h:.2f}", ha="center", va="center", color="white", fontsize=8)
+                ax.text(
+                    xpos,
+                    base + h / 2,
+                    f"{h:.2f}",
+                    ha="center",
+                    va="center",
+                    color="white",
+                    fontsize=8,
+                )
         bottom += height
 
     ax.set_xticks(x)
     ax.set_xticklabels(group_names, rotation=20, ha="right")
     ax.set_ylim(0, 1)
     ax.set_ylabel("Preference proportion")
-    #ax.legend(loc="upper right", frameon=False)
+    # ax.legend(loc="upper right", frameon=False)
     handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles[::-1], labels, loc="upper right", frameon=False) # Reverse legend order but labels are keeped
+    ax.legend(
+        handles[::-1], labels, loc="upper right", frameon=False
+    )  # Reverse legend order but labels are keeped
     fig.tight_layout()
     fig.savefig(output_path)
     plt.close(fig)
@@ -194,7 +210,9 @@ def export_preference_analyses() -> None:
 
     summary_two = _load_preference_summary(PREFERENCE_PREFIX_TWO)
     data_two = _prepare_group_data(summary_two, TWO_GROUP_KEYS)
-    colors = STACK_COLORS_TWO + ((0.8, 0.8, 0.8),) * (len(TWO_METHOD_LABELS) - len(STACK_COLORS_TWO))
+    colors = STACK_COLORS_TWO + ((0.8, 0.8, 0.8),) * (
+        len(TWO_METHOD_LABELS) - len(STACK_COLORS_TWO)
+    )
     _plot_stacked_preferences(
         data_two,
         TWO_METHOD_LABELS,

@@ -3,11 +3,11 @@
 This script replaces the ad-hoc variants under ``preference_analysis_dirty`` by
 exposing their functionality through a single command-line interface.
 """
+
 from __future__ import annotations
 
 import argparse
 import pickle
-import sys
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping
 
@@ -154,7 +154,9 @@ def load_recon_images(result_dir: Path, recon_method: str) -> List[Image.Image]:
     return images
 
 
-def collect_recon_sets(result_dir: Path, recon_methods: Iterable[str]) -> Dict[str, List[Image.Image]]:
+def collect_recon_sets(
+    result_dir: Path, recon_methods: Iterable[str]
+) -> Dict[str, List[Image.Image]]:
     return {method: load_recon_images(result_dir, method) for method in recon_methods}
 
 
@@ -170,8 +172,12 @@ def prepare_feature_backend(model_name: str, device: torch.device):
             for name, module in model.visual.named_modules()
             if isinstance(module, (torch.nn.Conv2d, torch.nn.Linear))
         ]
-        layer_names = [name for name, _ in layer_tuples if not name.startswith("attnpool")]
-        layer_names = [name for name in layer_names if "downsample" not in name] + ["output"]
+        layer_names = [
+            name for name, _ in layer_tuples if not name.startswith("attnpool")
+        ]
+        layer_names = [name for name in layer_names if "downsample" not in name] + [
+            "output"
+        ]
         image_mean = np.array(preprocess.transforms[-1].mean)
         image_std = np.array(preprocess.transforms[-1].std)
         encoder_domain = ComposedDomain(
@@ -251,7 +257,9 @@ def evaluate_feature_metric(
         for method, images in recon_sets.items()
     }
 
-    similarity_matrices: Dict[str, List[np.ndarray]] = {layer: [] for layer in layer_names}
+    similarity_matrices: Dict[str, List[np.ndarray]] = {
+        layer: [] for layer in layer_names
+    }
 
     for layer in layer_names:
         if model_name == "RN50":
@@ -285,7 +293,9 @@ def evaluate_dreamsim_metric(
     if use_lpips:
         from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 
-        lpips = LearnedPerceptualImagePatchSimilarity(net_type="alex", normalize=True).to(device)
+        lpips = LearnedPerceptualImagePatchSimilarity(
+            net_type="alex", normalize=True
+        ).to(device)
 
     def _prep(img: Image.Image) -> torch.Tensor:
         tensor = preprocess(img)
@@ -304,7 +314,10 @@ def evaluate_dreamsim_metric(
         with torch.no_grad():
             if use_lpips:
                 distances = torch.stack(
-                    [lpips(target_tensor[i][None], recon_tensor[i][None]) for i in range(len(target_tensor))]
+                    [
+                        lpips(target_tensor[i][None], recon_tensor[i][None])
+                        for i in range(len(target_tensor))
+                    ]
                 )
             else:
                 distances = model(target_tensor, recon_tensor)
@@ -314,7 +327,9 @@ def evaluate_dreamsim_metric(
     return {"output": np.stack(similarity_stacks, axis=1)}
 
 
-def preference_from_similarity(matrices: Mapping[str, np.ndarray]) -> Dict[str, np.ndarray]:
+def preference_from_similarity(
+    matrices: Mapping[str, np.ndarray],
+) -> Dict[str, np.ndarray]:
     return {layer: np.argmax(matrix, axis=1) for layer, matrix in matrices.items()}
 
 

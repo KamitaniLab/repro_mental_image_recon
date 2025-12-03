@@ -4,6 +4,7 @@ This script consolidates the logic that previously lived in the Jupyter
 notebook. Running it will regenerate the publication-ready panels stored under
 ``assets/fig02``.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
