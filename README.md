@@ -22,11 +22,10 @@ Follow the steps below to set up the environment and download the required asset
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
-2. **Clone the Koide–Majima reproduction repository and enter it**
+2. **Clone this repository and enter it**
    ```bash
-   git clone https://github.com/KamitaniLab/repro_mental_image_recon.git
+   git clone --recursive https://github.com/KamitaniLab/repro_mental_image_recon.git
    cd repro_mental_image_recon
-   git clone https://github.com/nkmjm/mental_img_recon.git && git -C mental_img_recon checkout 2eff41d
    ```
 
 3. **Prepare Python 3.12 and create a local virtual environment**
