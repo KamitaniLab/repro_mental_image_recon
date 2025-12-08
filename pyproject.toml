@@ -38,6 +38,7 @@ dependencies = [
     "mental-img-recon",
     "bdpy",
     "clip",
+    "ruff>=0.5.0",
 ]
 
 [tool.uv.sources]
