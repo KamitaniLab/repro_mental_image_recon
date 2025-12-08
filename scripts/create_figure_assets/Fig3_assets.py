@@ -1,4 +1,5 @@
 """Generate assets for Figure 3 (CLIP-only reconstructions and evaluation)."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -24,16 +25,17 @@ OUTPUT_DIR = ensure_directory(PROJECT_ROOT / "assets" / "fig03")
 
 CONDITION_LABEL = "CLIP-only"
 CONDITION_KEY = "CLIPonly_all"
+# copyright-safe subset of images for Figure 3
 RANDOM_POOL = (
     "imageryExpStim19_anat_iguana.tiff",
     "imageryExpStim21_anat_swan.tiff",
-    #"imageryExpStim20_anat_leopard.tiff",
-    #"imageryExpStim17_anat_goat.tiff",
-    #"imageryExpStim22_inat_airliner.tiff",
+    # "imageryExpStim20_anat_leopard.tiff",
+    # "imageryExpStim17_anat_goat.tiff",
+    # "imageryExpStim22_inat_airliner.tiff",
     "imageryExpStim23_inat_bowling.tiff",
-    #"imageryExpStim24_inat_post.tiff",
+    # "imageryExpStim24_inat_post.tiff",
     "imageryExpStim25_inat_stainedglass.tiff",
-    #"imageryExpStim26_inat_umbrella.tiff",
+    # "imageryExpStim26_inat_umbrella.tiff",
 )
 RANDOM_COUNT = 4
 RANDOM_SEED = 42
@@ -76,7 +78,11 @@ def export_random_reconstruction_panel() -> None:
 
 
 def _load_same_feature_scores(condition_key: str) -> list[float]:
-    eval_path = RECON_IMAGE_ROOT / condition_key / "pairwise_identification_results_koide_majima_optsame_metric.pkl"
+    eval_path = (
+        RECON_IMAGE_ROOT
+        / condition_key
+        / "pairwise_identification_results_koide_majima_optsame_metric.pkl"
+    )
     with eval_path.open("rb") as handle:
         data = pickle.load(handle)
     # The pickle structure is assumed to be {subject_id: score_list}
@@ -88,7 +94,11 @@ def _load_independent_scores(
     eval_model: str,
     metric: str,
 ) -> list[float]:
-    eval_path = RECON_IMAGE_ROOT / condition_key / f"pairwise_identification_results_{eval_model}_{metric}_sim_matrix.pkl"
+    eval_path = (
+        RECON_IMAGE_ROOT
+        / condition_key
+        / f"pairwise_identification_results_{eval_model}_{metric}_sim_matrix.pkl"
+    )
     with eval_path.open("rb") as handle:
         data = pickle.load(handle)
 
@@ -106,7 +116,9 @@ def _load_independent_scores(
 
 def export_pairwise_identification_plot() -> None:
     same_feature_scores = _load_same_feature_scores(CONDITION_KEY)
-    independent_scores = _load_independent_scores(CONDITION_KEY, PAIRWISE_EVAL_MODEL, PAIRWISE_EVAL_METRIC)
+    independent_scores = _load_independent_scores(
+        CONDITION_KEY, PAIRWISE_EVAL_MODEL, PAIRWISE_EVAL_METRIC
+    )
 
     df = pd.DataFrame(
         [
@@ -125,7 +137,6 @@ def export_pairwise_identification_plot() -> None:
 
     fig, ax = plt.subplots(figsize=(6, 7))
     x = np.arange(len(df))
-    bars = ax.bar(x, df["ave_acc"], color="0.75", width=0.5)
 
     for idx, scores in enumerate(df["points"]):
         ax.scatter(
@@ -144,7 +155,9 @@ def export_pairwise_identification_plot() -> None:
     ax.set_title(f"Pairwise identification ({CONDITION_LABEL})")
     fig.tight_layout()
 
-    output_path = OUTPUT_DIR / "Fig3B_pairwise_identification_concat_pixel_correlation.pdf"
+    output_path = (
+        OUTPUT_DIR / "Fig3B_pairwise_identification_concat_pixel_correlation.pdf"
+    )
     fig.savefig(output_path)
     plt.close(fig)
 

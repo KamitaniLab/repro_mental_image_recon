@@ -6,6 +6,14 @@ Ken Shirakawa, Yoshihiro Nagano, Misato Tanaka, Fan L. Cheng, Yukiyasu Kamitani,
 
 The code wraps the original implementation provided in [`nkmjm/mental_img_recon`](https://github.com/nkmjm/mental_img_recon) and adds convenience utilities for batch experiments, figure generation, and exploratory comparisons.
 
+## Validated environment
+- Ubuntu Ubuntu 20.04.6 LTS
+- Python 3.12.4
+- NVIDIA Driver 535.183.01
+- CUDA 12.8
+- GPU: GeForce RTX 4090 (24GB)
+
+
 ## Quick Start
 Follow the steps below to set up the environment and download the required assets.
 
@@ -14,11 +22,10 @@ Follow the steps below to set up the environment and download the required asset
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
-2. **Clone the Koide–Majima reproduction repository and enter it**
+2. **Clone this repository and enter it**
    ```bash
-   git clone https://github.com/KamitaniLab/repro_mental_image_recon.git
+   git clone --recursive https://github.com/KamitaniLab/repro_mental_image_recon.git
    cd repro_mental_image_recon
-   git clone https://github.com/nkmjm/mental_img_recon.git && git -C mental_img_recon checkout 2eff41d
    ```
 
 3. **Prepare Python 3.12 and create a local virtual environment**
@@ -31,7 +38,7 @@ Follow the steps below to set up the environment and download the required asset
 
 4. **Install the remaining dependencies with `uv`**
    ```bash
-   uv sync
+   uv sync --locked
    ```
    This command reads `pyproject.toml` / `uv.lock` and installs everything else into the active `.venv`.
 
@@ -39,13 +46,13 @@ Follow the steps below to set up the environment and download the required asset
    ```bash
    uv run bash setup_resources.sh
    ```
-   The helper script orchestrates `download_brain_features.py`, `download_vqgan_model.sh`. and the extraction of imagery stimuli archives. If you want to run the evaluation scripts, make sure the required archives are placed under `data/` before running the script. Note that the imagery stimuli themselves are not included in this repository due to copyright restrictions; if you need access to them for evaluation, please contact us directly.
+   This helper script runs download_brain_features.py, download_vqgan_model.sh, and also extracts imagery stimulus archives (if exists). These data follow the original repository (https://github.com/nkmjm/mental_img_recon) and their Colab demo (https://colab.research.google.com/drive/1gaMoae0ntiT94-rQUMymkZboNc-imTzl?usp=drive_link), including decoded features and pretrained VQGAN weights. If you want to run the evaluation scripts, make sure the required archives are placed under data/ before running the script. Note that the imagery target stimuli themselves are not included in this repository due to copyright restrictions; if you need access to them for evaluation, please contact us directly.
 
 ## Running the Experiments
 The main entry points live under `scripts/experiments/`:
-- `replicate_original_analysis.py` — mirrors the original Koide–Majima reconstruction pipeline and supports method presets such as `original_all`, `CLIPonly_all`, and `wo_SGLD_CLIP_all`. This script is related to Figrure 2C, 3A, 4B, and 5.
+- `replicate_original_analysis.py` — mirrors the original Koide–Majima reconstruction pipeline and supports method presets such as `original_all`, `CLIPonly_all`, and `wo_SGLD_CLIP_all`. This script is related to Figure 2C, 3A, 4B, and 5.
 - `recon_image_koide-majima_methods_multi_times_no_seed.py` — convenience wrapper for running multiple reconstructions with different configurations. This script is related to Figure 2D.
-- `compare_SGD_SGLD_recon_for_eval_sampling_variance.py` and the `preference_analysis_*` scripts — supplementary analyses exploring reconstruction variability and quality metrics.　This script is related to Figure 4DE.
+- `compare_SGD_SGLD_recon_for_eval_sampling_variance.py` and the `preference_analysis_*` scripts — supplementary analyses exploring reconstruction variability and quality metrics.　This script is related to Figures 4D and 4E.
 
 Run the scripts inside the managed environment with `uv run`, for example:
 ```bash
@@ -58,7 +65,11 @@ All core reconstruction functions (e.g. VQGAN initialisation, feature loading, a
 
 ## Troubleshooting
 - **Different outputs across runs:** this is expected due to the upstream non-deterministic optimisation. If you want to quantify variability, run the reconstruction scripts multiple times and compare the saved outputs under `results/`.
-- **Missing data errors:** double-check that the decoded features, mean features, and reference images are placed under the paths referenced in `scripts/config/config_KS_mod.yaml`.
 - **Model checkpoint issues:** ensure the VQGAN checkpoints from the original release exist under `external/taming-transformers/logs/...` as referenced in the configuration file.
 
-Feel free to adapt the scripts for your own experiments, but keep the reproducibility warning in mind whenever you interpret the results.
+## Contact
+If you want to use imagery target stimuli or have any questions, please contact us at Kamitani Lab:
+
+
+## License
+This project is licensed under the MIT License.

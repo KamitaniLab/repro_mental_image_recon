@@ -4,6 +4,7 @@ This script consolidates the logic that previously lived in the Jupyter
 notebook. Running it will regenerate the publication-ready panels stored under
 ``assets/fig02``.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -27,6 +28,7 @@ OUTPUT_DIR = ensure_directory(PROJECT_ROOT / "assets" / "fig02")
 # Dataset metadata
 CONDITION_KEY = "original_all"
 COMPARISON_LABEL = "Koide-Majima"
+# copyright-safe subset of images for Figure 2
 RANDOM_SELECTION = (
     "imageryExpStim18_anat_goldfish.tiff",
     "imageryExpStim21_anat_swan.tiff",

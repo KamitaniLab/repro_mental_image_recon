@@ -1,4 +1,5 @@
 """Generate sampling analysis figure for Figure 5C-E."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -7,14 +8,17 @@ import numpy as np
 import pickle
 
 from figure_asset_utils import (
-    SOURCE_IMAGE_NAMES,
     ensure_directory,
     project_root,
 )
 
 PROJECT_ROOT = project_root()
-RECON_ROOT = PROJECT_ROOT / "results" / "rep_recon_image_koide-majima_recon_variability_no_seed_latest"
-OUTPUT_PATH = ensure_directory(PROJECT_ROOT / "assets" / "fig05") / "fig05_sampling_part.pdf"
+RECON_ROOT = (
+    PROJECT_ROOT / "results" / "rep_recon_image_koide-majima_recon_variability_no_seed"
+)
+OUTPUT_PATH = (
+    ensure_directory(PROJECT_ROOT / "assets" / "fig05") / "fig05_sampling_part.pdf"
+)
 
 CONDITION_KEY = "original_all"
 SUBJECT_ID = "S2"
@@ -82,8 +86,12 @@ def export_sampling_analysis() -> None:
     pixel_std = pixel_traces.std(axis=0)
 
     rng = np.random.default_rng(TRACE_SEED)
-    latent_indices = np.sort(rng.choice(latent_traces.shape[1], TRACE_SAMPLE_COUNT, replace=False))
-    pixel_indices = np.sort(rng.choice(pixel_traces.shape[1], TRACE_SAMPLE_COUNT, replace=False))
+    latent_indices = np.sort(
+        rng.choice(latent_traces.shape[1], TRACE_SAMPLE_COUNT, replace=False)
+    )
+    pixel_indices = np.sort(
+        rng.choice(pixel_traces.shape[1], TRACE_SAMPLE_COUNT, replace=False)
+    )
     latent_max_idx = int(np.argmax(latent_std))
     pixel_max_idx = int(np.argmax(pixel_std))
 
@@ -98,7 +106,9 @@ def export_sampling_analysis() -> None:
     fig, axes = plt.subplots(3, 2, figsize=(10, 6))
 
     latent_trace_indices = list(latent_indices) + [latent_max_idx]
-    colors_latent = [plt.get_cmap("tab20")(2 * i + 1) for i in range(TRACE_SAMPLE_COUNT)] + ["0.5"]
+    colors_latent = [
+        plt.get_cmap("tab20")(2 * i + 1) for i in range(TRACE_SAMPLE_COUNT)
+    ] + ["0.5"]
     for idx, color in zip(latent_trace_indices, colors_latent):
         axes[0, 0].plot(latent_traces[:, idx], color=color, linewidth=1.0)
     axes[0, 0].set_ylabel("Latent value")
@@ -111,7 +121,9 @@ def export_sampling_analysis() -> None:
     axes[1, 0].set_ylabel("Frequency")
 
     pixel_trace_indices = list(pixel_indices) + [pixel_max_idx]
-    colors_pixel = [plt.get_cmap("tab20")(2 * i) for i in range(TRACE_SAMPLE_COUNT)] + ["0.4"]
+    colors_pixel = [plt.get_cmap("tab20")(2 * i) for i in range(TRACE_SAMPLE_COUNT)] + [
+        "0.4"
+    ]
     for idx, color in zip(pixel_trace_indices, colors_pixel):
         axes[0, 1].plot(pixel_traces[:, idx], color=color, linewidth=1.0)
     axes[0, 1].set_ylabel("Pixel value")

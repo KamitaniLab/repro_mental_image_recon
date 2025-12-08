@@ -2,13 +2,14 @@
 """
 download_brain_features.py
 
-A script to download and extract brain decoding feature data (.tar.gz) from Google Drive.
+A script to download and extract brain decoding feature data (.tar.gz) from Google Drive provided by Koide-Majima et al. (2024).
 Based on https://colab.research.google.com/drive/1gaMoae0ntiT94-rQUMymkZboNc-imTzl?usp=drive_link
 """
 
 import gdown
 import tarfile
 from pathlib import Path
+
 
 def main():
     # Google Drive のファイルID
@@ -33,6 +34,7 @@ def main():
         tar.extractall(path=output_dir)
 
     print(f"✅ Done! Files extracted to: {output_dir}")
+
 
 if __name__ == "__main__":
     main()

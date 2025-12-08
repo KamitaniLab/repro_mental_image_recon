@@ -1,4 +1,5 @@
 """Generate reconstruction variability panel for Figure 2D."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -15,15 +16,22 @@ from figure_asset_utils import (
 
 PROJECT_ROOT = project_root()
 RECON_ROOT_CANDIDATES = (
-    PROJECT_ROOT / "results" / "rep_recon_image_koide-majima_recon_variability_no_seed_latest",
+    PROJECT_ROOT
+    / "results"
+    / "rep_recon_image_koide-majima_recon_variability_no_seed_latest",
     PROJECT_ROOT / "results" / "rep_recon_image_koide-majima_recon_variability_no_seed",
 )
-OUTPUT_PATH = ensure_directory(PROJECT_ROOT / "assets" / "fig02") / "Fig2D_recon_image_variable.pdf"
+OUTPUT_PATH = (
+    ensure_directory(PROJECT_ROOT / "assets" / "fig02")
+    / "Fig2D_recon_image_variable.pdf"
+)
 
 CONDITION_KEY = "original_all"
 SUBJECT_ID = "S2"
-STIMULUS_NAME_LIST = ('imageryExpStim20_anat_leopard.tiff',
-                'imageryExpStim22_inat_airliner.tiff')
+STIMULUS_NAME_LIST = (
+    "imageryExpStim20_anat_leopard.tiff",
+    "imageryExpStim22_inat_airliner.tiff",
+)
 
 ITERATIONS = tuple(f"iter{idx:02}" for idx in range(4, 8))
 
@@ -54,10 +62,12 @@ def _load_iteration_recons(
 
 def generate_variability_panel() -> None:
     recon_root = _resolve_recon_root()
-    
+
     for STIMULUS_NAME in STIMULUS_NAME_LIST:
         target_image = load_target_images([STIMULUS_NAME])[0]
-        recon_images = _load_iteration_recons(recon_root, SUBJECT_ID, STIMULUS_NAME, ITERATIONS)
+        recon_images = _load_iteration_recons(
+            recon_root, SUBJECT_ID, STIMULUS_NAME, ITERATIONS
+        )
 
         target_row = [target_image] * len(ITERATIONS)
         conditions = [
