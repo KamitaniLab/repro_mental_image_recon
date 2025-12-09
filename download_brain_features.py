@@ -12,11 +12,11 @@ from pathlib import Path
 
 
 def main():
-    # Google Drive のファイルID
+    # Google Drive file ID and download URL
     file_id = "1Q7TVsVbASMqnDYfFjFzo2SV6njExu8qq"
     download_url = f"https://drive.google.com/uc?id={file_id}"
 
-    # 保存パス
+    # Path to save and extract the downloaded file
     output_dir = Path("./lib/mental_img_recon/content/mental_img_recon")
     output_dir.mkdir(parents=True, exist_ok=True)
 
