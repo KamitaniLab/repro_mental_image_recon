@@ -74,7 +74,7 @@ All core reconstruction functions (e.g. VQGAN initialization, feature loading, a
 
 ## Contact
 If you would like to use imagery target stimuli or have any questions, please contact us:
-
+shirakawaken0118@gmail.com
 
 ## License
 This project is licensed under the MIT License.
