@@ -72,6 +72,71 @@ uv run python scripts/experiments/replicate_original_analysis.py original_all
 ## Notes on Dependency and Reproducibility
 All core reconstruction functions (e.g. VQGAN initialization, feature loading, and optimization routines) are imported directly from the upstream [`mental_img_recon`](https://github.com/nkmjm/mental_img_recon) repository. Keeping this dependency intact ensures compatibility with the original behavior of the original release, but it also inherits the lack of deterministic seeding mentioned above. Different outputs across runs are expected due to the upstream non-deterministic optimisation.
 
+### Seeded reconstruction
+
+The upstream reconstruction draws every random number from the *global* torch / NumPy
+RNGs, which the public demo never seeds, so the result changes on every run.
+`scripts/experiments/recon_func_reproducible.py` is a seeded variant that leaves the
+upstream `recon_func.py` untouched: every draw goes through one explicit
+`torch.Generator` instead of the global RNG.
+
+| Randomness in upstream `recon_func.py` | In the seeded variant |
+|---|---|
+| crop size `torch.normal`, crop offsets `torch.randint` | `generator=` |
+| per-crop noise `torch.randn_like`, its scale `torch.rand` | `generator=` |
+| Langevin noise `np.random.normal` (NumPy!) | `torch.randn(generator=)` |
+| `RandomHorizontalFlip` / `RandomAffine` | sub-seed derived from the generator; the global RNG state is saved and restored around it |
+
+Use the dedicated script (`..._no_seed.py` is deliberately left as the unseeded
+variability experiment):
+
+```bash
+uv run python scripts/experiments/recon_image_koide-majima_methods_multi_times_reproducible.py \
+    original_all --seed 42 --subjects S01 --targets 18 --iters 10
+```
+
+Each reconstruction gets its own seed, derived as
+`sha256(base_seed | subject | targetID | iter_n)`. Because it depends on the indices
+rather than on the loop order, the repeats still differ from one another while each one
+stays reproducible on its own — and a run can be sharded across GPUs or restarted
+partway and still produce identical results. The seed used is stored in the output
+`.pkl`.
+
+### What `--seed` does and does not guarantee
+
+Verify it yourself — this runs each check twice in two separate processes and compares:
+
+```bash
+uv run python scripts/experiments/check_determinism.py --device cpu --recon
+uv run python scripts/experiments/check_determinism.py --recon           # GPU
+```
+
+Measured on one RTX 3090 (seed 42 → `2956797496`, S01/target 18, Adam 1000 + SGLD 500):
+
+| | CPU | GPU (CUDA) |
+|---|---|---|
+| `createCrops` forward | identical (sha256) | identical (sha256) |
+| `createCrops` backward | identical, `max\|d\|=0` | **differs**, `max\|d\|=3.8e-06` |
+| final image, two runs | **bit-identical** | differs, `mean\|d\|=36.9` |
+| final latent, two runs | corr = 1.0 | corr = 0.324 |
+
+So the *sampling* is fully fixed on both devices, but bit-identical *output* holds only
+on CPU. On CUDA, `grid_sampler_2d_backward_cuda` (and the bilinear `interpolate`
+backward) accumulate gradients with `atomicAdd`, whose order is not fixed, and PyTorch
+has no deterministic implementation for them — `cudnn.deterministic` covers only
+convolutions. The resulting float32 rounding difference is amplified by the update rule
+(`T=1e-06` multiplies the gradient by ~166) and the VQGAN/CLIP non-linearities: the two
+runs fall to corr 0.50 by step 200 and saturate at 0.33 by step 1000.
+
+`scripts/create_figure_assets/Fig_determinism_cpu_vs_gpu.py` renders this comparison.
+
+> **Note on the results reported in the paper.** The analyses in the paper reuse the
+> existing upstream code, which has no seed handling, so every run produced different
+> values. The seeded variant described here was written afterwards and is *not* what
+> produced the published figures. Even with the seed fixed, we have confirmed that
+> running on a GPU still makes the values drift between runs; on CPU the two runs match
+> exactly.
+
 ## Contact
 If you would like to use imagery target stimuli or have any questions, please contact us:
 shirakawaken0118@gmail.com

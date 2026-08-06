@@ -39,6 +39,7 @@ dependencies = [
     "bdpy",
     "clip",
     "ruff>=0.5.0",
+    "pytest>=8.0.0",
 ]
 
 [tool.uv.sources]

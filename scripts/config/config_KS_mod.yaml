@@ -1,5 +1,13 @@
 
 ###
+### reproducibility
+
+# Random seed for reproducible reconstruction / evaluation.
+# Used by recon_func_reproducible (set_seed + per-run torch.Generator).
+seed: 42
+
+
+###
 ### file path
 
 file_path:
