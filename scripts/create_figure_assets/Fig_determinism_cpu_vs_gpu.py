@@ -153,7 +153,6 @@ def main():
                      fontweight='bold' if not stats[d]['identical'] else 'normal')
         axb.set_xticks(xs)
         axb.set_xticklabels([LABEL[d] for d in args.devices], fontsize=10, color=INK)
-        n_note = 'one image'
     else:
         # Subjects pooled: one distribution over every same-seed comparison.
         subs = sorted(sweep)
@@ -184,13 +183,10 @@ def main():
         axb.set_xticks([0, 1])
         axb.set_xticklabels(['CPU', 'GPU (CUDA)'], fontsize=10, color=INK)
         axb.set_xlim(-0.6, 2.0)
-        n_note = (f'{len(v)} same-seed comparisons pooled over '
-                  f'{len(subs)} subjects x 25 images')
 
     axb.set_ylabel('mean |pixel difference| between two same-seed runs',
                    fontsize=10, color=INK_MUTED, labelpad=8)
     axb.set_ylim(0, top)
-    axb.set_title(n_note, fontsize=9, color=INK_MUTED, pad=6)
     axb.grid(axis='y', color='#e8e7e2', linewidth=0.8, zorder=0)
     axb.set_axisbelow(True)
     for side in ('top', 'right'):
