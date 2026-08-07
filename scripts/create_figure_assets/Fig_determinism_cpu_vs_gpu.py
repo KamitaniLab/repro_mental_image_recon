@@ -1,15 +1,18 @@
 """Figure: the same seed is bit-reproducible on CPU but not on GPU.
 
 Left  -- image grid, one column per device:
-           row 1  target image
-           row 2  run 1 (SGLD final)
-           row 3  run 2 (SGLD final)
-           row 4  |run 1 - run 2|, shared magnitude scale
-Right -- mean |pixel difference| between the two runs, per device.
+           row 1  run 1
+           row 2  run 2
+           row 3  |run 1 - run 2|, raw per-channel difference (black = identical)
+Right -- mean |pixel difference| between two same-seed runs, pooled over every
+         subject and image in the sweep.
 
-Inputs are produced by scripts/experiments/check_determinism.py --recon
-(once with --device cpu, once on GPU), which writes into
-results/_determinism_check/.
+No target image is shown: the right panel pools 75 images, so putting one target
+beside it would suggest the distribution belongs to that image.
+
+Inputs are produced by scripts/experiments/check_determinism.py --recon (once
+with --device cpu, once on GPU) for the image grid, and by
+scripts/experiments/determinism_sweep.py for the distribution.
 
 Usage:
     python scripts/create_figure_assets/Fig_determinism_cpu_vs_gpu.py
@@ -23,7 +26,6 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
-import yaml
 from matplotlib.gridspec import GridSpec
 from PIL import Image
 
@@ -32,26 +34,10 @@ COLOR = {'cpu': '#2a78d6', 'cuda': '#eb6834'}
 LABEL = {'cpu': 'CPU', 'cuda': 'GPU (CUDA)'}
 INK = '#0b0b0b'
 INK_MUTED = '#52514e'
-DIFF_CMAP = 'Blues'          # sequential, single hue: magnitude
 
 RESULT_DIR = os.path.join('results', '_determinism_check')
 SWEEP_CSV = os.path.join('results', '_determinism_sweep', 'cuda_pairs.csv')
 OUT_DIR = os.path.join('assets', 'determinism')
-
-
-def load_target(targetID):
-    from recon_utils import get_target_image
-    with open('./scripts/config/demo_params.yaml', 'rb') as f:
-        prm = yaml.safe_load(f)
-    path = prm['dt_targetimages_path']
-    if not os.path.exists(path):
-        # Working copies keep mental_img_recon at the repo root rather than
-        # under lib/; use whichever is present.
-        alt = path.replace('lib//', '').replace('lib/', '')
-        if os.path.exists(alt):
-            path = alt
-    img, name = get_target_image(targetID, path)
-    return np.asarray(img), name
 
 
 def load_sweep(path):
@@ -86,7 +72,6 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--stage', choices=['final', 'sgd'], default='final',
                     help='final = after SGLD (default); sgd = after Adam')
-    ap.add_argument('--target', type=int, default=18)
     ap.add_argument('--devices', nargs='+', default=['cpu', 'cuda'])
     ap.add_argument('--sweep', default=SWEEP_CSV,
                     help='determinism_sweep.py CSV; the right panel shows its '
@@ -94,36 +79,35 @@ def main():
     ap.add_argument('--out', default=None)
     args = ap.parse_args()
 
-    target, targetname = load_target(args.target)
     runs = {d: load_pair(d, args.stage) for d in args.devices}
     diffs = {d: np.abs(runs[d][0] - runs[d][1]) for d in args.devices}
     stats = {d: dict(mean=diffs[d].mean(), max=diffs[d].max(),
                      identical=np.array_equal(runs[d][0], runs[d][1]))
              for d in args.devices}
 
-    # One magnitude scale across devices, so the two diff panels are comparable.
-    vmax = max(1.0, max(d.max() for d in diffs.values()))
-
     ncol = len(args.devices)
     # A blank spacer column keeps the bar chart's y-label off the image grid.
-    fig = plt.figure(figsize=(2.6 + 1.5 * ncol + 3.6, 7.6))
-    gs = GridSpec(4, ncol + 2, figure=fig,
+    fig = plt.figure(figsize=(2.6 + 1.5 * ncol + 3.6, 6.2))
+    gs = GridSpec(3, ncol + 2, figure=fig,
                   width_ratios=[1] * ncol + [0.5, 1.75 * ncol],
                   hspace=0.08, wspace=0.06,
-                  left=0.11, right=0.97, top=0.89, bottom=0.10)
+                  left=0.11, right=0.97, top=0.86, bottom=0.12)
 
-    rows = ['Target', 'Run 1', 'Run 2', '|Run 1 - Run 2|']
+    # No target row: the right panel pools 75 images, so showing one target
+    # beside it would imply the distribution belongs to that image.
+    rows = ['Run 1', 'Run 2', '|Run 1 - Run 2|']
 
     for ci, dev in enumerate(args.devices):
-        for ri in range(4):
+        for ri in range(3):
             ax = fig.add_subplot(gs[ri, ci])
-            if ri == 0:
-                ax.imshow(target)
-            elif ri in (1, 2):
-                ax.imshow(runs[dev][ri - 1].astype(np.uint8))
+            if ri in (0, 1):
+                ax.imshow(runs[dev][ri].astype(np.uint8))
             else:
-                im = ax.imshow(diffs[dev].mean(axis=2), cmap=DIFF_CMAP,
-                               vmin=0, vmax=vmax)
+                # Same rendering as Fig5B's difference panel: the raw per-channel
+                # |a - b| shown as an image, so 0 is black and larger differences
+                # are brighter. No colormap, so the two columns are directly
+                # comparable and CPU's all-zero panel reads as solid black.
+                ax.imshow(np.clip(diffs[dev], 0, 255).astype(np.uint8))
             ax.set_xticks([])
             ax.set_yticks([])
             for s in ax.spines.values():
@@ -136,12 +120,19 @@ def main():
                 ax.set_ylabel(rows[ri], fontsize=9.5, color=INK_MUTED,
                               rotation=0, ha='right', va='center', labelpad=10)
 
-    # Colorbar for the diff row, tucked under the image grid.
+    # Legend for the diff row: the intensity ramp the raw difference is read on.
     cax = fig.add_axes([0.115, 0.055, 0.105 * ncol, 0.011])
-    cb = fig.colorbar(im, cax=cax, orientation='horizontal')
-    cb.set_label('|difference|  (0-255)', fontsize=8, color=INK_MUTED)
-    cb.ax.tick_params(labelsize=7, colors=INK_MUTED, length=2)
-    cb.outline.set_visible(False)
+    cax.imshow(np.linspace(0, 1, 256).reshape(1, -1), cmap='gray',
+               aspect='auto', vmin=0, vmax=1)
+    cax.set_yticks([])
+    cax.set_xticks([0, 63.75, 127.5, 191.25, 255])
+    cax.set_xticklabels(['0', '64', '128', '192', '255'], fontsize=7,
+                        color=INK_MUTED)
+    cax.set_xlabel('|difference| per channel  (black = identical)',
+                   fontsize=8, color=INK_MUTED, labelpad=2)
+    cax.tick_params(length=2, colors=INK_MUTED)
+    for s in cax.spines.values():
+        s.set_visible(False)
 
     # ---- right: every GPU same-seed comparison as a point, CPU as the zero line
     axb = fig.add_subplot(gs[:, ncol + 1])
@@ -208,12 +199,13 @@ def main():
         axb.spines[side].set_color('#d8d7d2')
     axb.tick_params(colors=INK_MUTED, labelsize=9, length=3)
 
-    stage_name = 'after SGLD' if args.stage == 'final' else 'after Adam'
+    stage_name = ('full schedule (Adam + SGLD)' if args.stage == 'final'
+                  else 'Adam phase only')
     fig.suptitle('Same seed, same code: bit-reproducible on CPU, not on GPU',
-                 fontsize=13.5, color=INK, fontweight='bold', y=0.975)
-    fig.text(0.5, 0.935,
-             f'target {targetname}   |   two runs, identical seed   |   '
-             f'reconstruction {stage_name}',
+                 fontsize=13.5, color=INK, fontweight='bold', y=0.978)
+    fig.text(0.5, 0.925,
+             "seed-controlled version of Koide-Majima's implementation   |   "
+             f'two runs, identical seed   |   {stage_name}',
              ha='center', fontsize=9.5, color=INK_MUTED)
 
     out = args.out or os.path.join(OUT_DIR, f'Fig_determinism_{args.stage}')
