@@ -1,0 +1,51 @@
+# Generated outputs (regenerate via scripts/experiments/)
+results/
+figures/
+assets/
+assets_ipynb/
+
+# Downloaded data and models
+data/
+models/
+*.zip
+*.tar.gz
+
+# Python and cache
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.log
+*.bak
+
+# Root-level convenience files (duplicates of results/)
+distance_distribution_deeprecon_TH_VC.pdf
+distance_distribution_deeprecon_TH_VC.png
+distances_dreamsim.csv
+distances_lpips.csv
+matrices_dreamsim.npz
+matrices_lpips.npz
+summary_deeprecon_TH_VC.txt
+results_variability_gap*.log
+
+# Local development clones (submodules in lib/ are authoritative)
+mental_img_recon/
+external/
+taming/
+repro_koide_majima/
+
+# Manuscripts (private, tracked separately)
+manuscripts/
+
+# Internal documentation (not for public release)
+writing/
