@@ -34,7 +34,13 @@ import yaml
 from PIL import Image
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-sys.path.append(str(PROJECT_ROOT / "mental_img_recon"))
+
+# Load config for mental_img_recon path
+with open(str(PROJECT_ROOT / "scripts/config/config_KS_mod.yaml"), "rb") as f:
+    dt_cfg = yaml.safe_load(f)
+mental_img_recon_dir = dt_cfg["file_path"]["mental_img_recon_dir"]
+sys.path.append(mental_img_recon_dir)
+
 from recon_utils import get_target_image  # noqa: E402
 
 DEFAULT_ROOT = PROJECT_ROOT / "results" / "oat_sampling_params"

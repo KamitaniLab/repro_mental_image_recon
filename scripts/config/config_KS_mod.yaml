@@ -11,8 +11,9 @@ seed: 42
 ### file path
 
 file_path:
+    mental_img_recon_dir: "./lib/mental_img_recon"
     taming_transformer_dir: "./lib/taming-transformers/"
-    decoded_feat_dir: "./lib//mental_img_recon/content/mental_img_recon/features/decoded_features/"
+    decoded_feat_dir: "./lib/mental_img_recon/content/mental_img_recon/features/decoded_features/"
     mean_feat_dir: "./lib/mental_img_recon/content/mental_img_recon/features/meanDNNfeature/"
     recon_img_dir: "./lib/recon_images/"
 
