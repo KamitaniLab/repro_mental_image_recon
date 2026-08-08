@@ -15,12 +15,12 @@ Reads the per-pair CSV written by distance_distribution_general.py
 Run:
   # 5 best vs 3 worst side by side
   uv run python scripts/create_figure_assets/Fig_best_pairs.py \
-      --csv results/rep_recon_image_koide-majima_comparing_SGD_updated_sampling_parameters/original_all/distance_summary_CORRECTED/distances_dreamsim.csv \
+      --csv results/rep_recon_image_koide-majima_comparing_SGD_updated_sampling_parameters/original_all/distance_summary_dreamsim/distances_dreamsim.csv \
       --group S2 --top 5 --bottom 3 --width_mm 170
 
   # all 25 pairs, 5 per row, ranked best -> worst
   uv run python scripts/create_figure_assets/Fig_best_pairs.py \
-      --csv .../distance_summary_CORRECTED/distances_dreamsim.csv \
+      --csv .../distance_summary_dreamsim/distances_dreamsim.csv \
       --group S2 --top 0 --per_row 5 --width_mm 170
 """
 import os

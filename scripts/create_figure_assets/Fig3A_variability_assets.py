@@ -16,9 +16,6 @@ from figure_asset_utils import (
 
 PROJECT_ROOT = project_root()
 RECON_ROOT_CANDIDATES = (
-    PROJECT_ROOT
-    / "results"
-    / "rep_recon_image_koide-majima_recon_variability_no_seed_latest",
     PROJECT_ROOT / "results" / "rep_recon_image_koide-majima_recon_variability_no_seed",
 )
 OUTPUT_PATH = (

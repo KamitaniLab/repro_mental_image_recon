@@ -35,7 +35,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_ROOT = (
     PROJECT_ROOT
     / "results"
-    / "rep_recon_image_koide-majima_recon_variability_no_seed_latest"
+    / "rep_recon_image_koide-majima_recon_variability_no_seed"
 )
 DEFAULT_OUT_DIR = PROJECT_ROOT / "results" / "sgld_effect_summary"
 
