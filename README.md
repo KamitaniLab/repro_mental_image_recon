@@ -1,13 +1,12 @@
-# Reanalysis of Mental Image Reconstruction in Koide–Majima et al.(2024).
-
-This repository collects the scripts we use to re-run the imagery reconstruction analyses introduced by Koide-Majima et al. (2024). 
+# Reanalysis of Mental Image Reconstruction in Koide–Majima et al.(2024)
 
 This repository contains the code for the paper:
-Ken Shirakawa, Yoshihiro Nagano, Misato Tanaka, Fan L. Cheng, Yukiyasu Kamitani,
-"Advancing credibility and transparency in brain-to-image reconstruction research: Reanalysis of Koide-Majima, Nishimoto, and Majima (Neural Networks, 2024)" 
+
+**Ken Shirakawa, Yoshihiro Nagano, Misato Tanaka, Fan L. Cheng, Yukiyasu Kamitani**  
+*"Advancing credibility and transparency in brain-to-image reconstruction research: Reanalysis of Koide-Majima, Nishimoto, and Majima (Neural Networks, 2024)"*  
 Preprint: https://arxiv.org/abs/2511.07960
 
-This repository builds upon the original implementation provided in [`nkmjm/mental_img_recon`](https://github.com/nkmjm/mental_img_recon) and includes additional scripts for a systematic reanalysis that verifies and quantifies their reported findings.
+The repository collects scripts to re-run the imagery reconstruction analyses and reproduce all figures in the revised manuscript. It builds upon the original implementation in [`nkmjm/mental_img_recon`](https://github.com/nkmjm/mental_img_recon).
 
 ## Validated environment
 - Ubuntu 20.04.6 LTS
@@ -16,65 +15,111 @@ This repository builds upon the original implementation provided in [`nkmjm/ment
 - CUDA 12.8
 - GPU: GeForce RTX 4090 (24GB)
 
-
 ## Quick Start
-Follow the steps below to set up the environment and download the required data.
 
 1. **Install `uv`**
    ```bash
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
-2. **Clone this repository and enter it**
+2. **Clone this repository with submodules**
    ```bash
    git clone --recursive https://github.com/KamitaniLab/repro_mental_image_recon.git
    cd repro_mental_image_recon
+   git submodule update --init --recursive
    ```
-   Be sure to include the `--recursive` option so that submodules are properly cloned.
 
-3. **Prepare Python 3.12 and create a local virtual environment**
+3. **Set up Python 3.12 environment**
    ```bash
    uv python install 3.12
    uv venv --python 3.12
    source .venv/bin/activate
-   ```
-   Keep the environment activated for the remaining steps.
-
-4. **Install the remaining dependencies with `uv`**
-   ```bash
    uv sync --locked
    ```
-   This command reads `pyproject.toml` / `uv.lock` and installs everything else into the active `.venv`.
 
-5. **Fetch the brain features and model weights**
+4. **Download brain features and model weights**
    ```bash
    uv run bash setup_resources.sh
    ```
-   This helper script runs download_brain_features.py, download_vqgan_model.sh, and also extracts imagery stimulus archives if available. These data follow the original repository (https://github.com/nkmjm/mental_img_recon) and their Colab demo (https://colab.research.google.com/drive/1gaMoae0ntiT94-rQUMymkZboNc-imTzl?usp=drive_link), including decoded features and pretrained VQGAN weights. 
-   
-   Note that the imagery target stimuli themselves are not included in this repository due to copyright restrictions; if you need access to them for evaluation, please contact us directly. 
+   This fetches decoded fMRI features and pretrained VQGAN weights from the original repository.  
+   **Note:** Imagery target stimuli are excluded due to copyright. For access, contact shirakawaken0118@gmail.com.
 
-## Running the Experiments
-The main entry points live under `scripts/experiments/`:
-- `replicate_original_analysis.py` — mirrors the original Koide–Majima reconstruction pipeline and supports condition presets such as `original_all`, `CLIPonly_all`, and `wo_SGLD_CLIP_all`. This script is related to Figure 2C, 3A, 4B, and 5.
+## Reproducing Figures
 
-Usage:
+All analyses are organized by **analysis unit** (pipeline), each producing one or more figures in the manuscript.
+
+| # | Analysis Unit | Figures | Entry Point(s) | Figure Scripts |
+|---|---|---|---|---|
+| 1 | Reconstruction generation & representativeness | 2C, A1 | `replicate_original_analysis.py original_all` | `Fig2C_assets.py` |
+| 2 | DreamSim distance distribution & pairs | 2D, 2E | `recon_distance_distribution.py` | `Fig_best_pairs.py`, `recon_distance_examples.py` |
+| 3 | Run-to-run variability | 3A | `recon_image_koide-majima_methods_multi_times_no_seed.py` | `Fig3A_variability_assets.py` |
+| 4 | Published example comparison | 3B | (none — CC BY 4.0 adoption from original paper) | (none) |
+| 5 | Circular evaluation / recovery matrix | 4A, 4B | `recovery_matrix_invert_reps.py` + `recovery_check_eval.py` | `Fig_recon_and_identification_errorbar.py` |
+| 6 | SGLD/CLIP ablation | 5A–E, A2–A4 | `compare_SGD_SGLD_recon_for_eval_sampling_variance.py` + `run_preference_analysis.py` | `Fig5_ablation_assets.py`, `Fig5_ablation_recon_panels.py`, `preference_stats.py` |
+| 7 | SGLD sampling effect | 6A–E, A6 | `replicate_original_analysis.py original_all` → `sgld_effect_summary.py` | `Fig6_sgld_effect_assets.py`, `Fig6_sgld_effect_diagnostic_assets.py`, `Fig6A_sgld_systematic_assets.py` |
+| 8 | SGLD hyperparameter sweep (OAT) | A5 | `oat_search_SGD_SGLD_sampling_params.py` + `oat_dreamsim_matrices.py` | `Fig_oat_composite.py`, `Fig_oat_dreamsim_matrix.py`, `Fig_oat_slice_summary.py` |
+| 9 | CPU/GPU determinism | A7 | `check_determinism.py` + `determinism_sweep.py` | `Fig_determinism_cpu_vs_gpu.py` |
+
+### Example workflow
+
 ```bash
-# at repro_mental_image_recon dir 
+# Generate base reconstructions (Units 1, 6, 7)
 uv run python scripts/experiments/replicate_original_analysis.py original_all
+
+# Run variability analysis (Unit 3)
+uv run python scripts/experiments/recon_image_koide-majima_methods_multi_times_no_seed.py \
+    --subjects S1,S2,S3 --iterations 10
+
+# Generate all figure assets
+uv run python scripts/create_figure_assets/Fig2C_assets.py
+uv run python scripts/create_figure_assets/Fig3A_variability_assets.py
+uv run python scripts/create_figure_assets/Fig5_ablation_assets.py
+# ... and so on for other figure scripts
 ```
 
-- `recon_image_koide-majima_methods_multi_times_no_seed.py` — running multiple reconstructions with different configurations. This script is related to Figure 2D.
-- `compare_SGD_SGLD_recon_for_eval_sampling_variance.py` and the `run_preference_analysis.sh` scripts — supplementary analyses exploring reconstruction variability and quality metrics.　These scripts are related to Figures 4D and 4E.
-- The replicating figures can be obtained from scripts in `create_figure_assets` directory.
+### Figure A2–A4 note
 
+Panels A2–A4 include a reference row showing results from an unpublished "revised iCNN" implementation (Tanaka et al., 2024; Nagano et al., in preparation). This variant is **not** included in this repository — those reference rows are external image assets. The ablation results for the main conditions (SGLD+CLIP, No SGLD+CLIP, SGLD+No CLIP, No SGLD+No CLIP) are fully reproducible via Unit 6.
 
-## Notes on Dependency and Reproducibility
-All core reconstruction functions (e.g. VQGAN initialization, feature loading, and optimization routines) are imported directly from the upstream [`mental_img_recon`](https://github.com/nkmjm/mental_img_recon) repository. Keeping this dependency intact ensures compatibility with the original behavior of the original release, but it also inherits the lack of deterministic seeding mentioned above. Different outputs across runs are expected due to the upstream non-deterministic optimisation.
+## Seed-Reproducible Reconstruction
 
-## Contact
-If you would like to use imagery target stimuli or have any questions, please contact us:
-shirakawaken0118@gmail.com
+The upstream reconstruction does not seed random operations, so results differ across runs. A seeded variant is provided:
+
+```bash
+uv run python scripts/experiments/recon_image_koide-majima_methods_multi_times_reproducible.py \
+    original_all --seed 42 --subjects S01 --targets 18 --iters 10
+```
+
+Each reconstruction gets its own seed derived as `sha256(base_seed | subject | targetID | iter_n)`, ensuring reproducibility while allowing independent variations across iterations and shardable parallel runs.
+
+### CPU vs GPU determinism
+
+CPU reconstruction is fully bit-identical across runs with seeding. GPU reconstruction, however, exhibits non-determinism in the backward pass of bilinear interpolation (`grid_sampler_2d_backward_cuda`), which accumulates gradients with `atomicAdd` in non-deterministic order. This results in float32 rounding differences that amplify over optimization steps (~36.9 mean absolute pixel difference after 1500 steps).
+
+Check both yourself:
+```bash
+uv run python scripts/experiments/check_determinism.py --device cpu --recon
+uv run python scripts/experiments/check_determinism.py --recon  # GPU
+```
+
+**Important:** The figures reported in the paper were generated with the *unseeded* upstream code (every run produced different values). The seeded variant above is a post-hoc diagnostic tool and was **not** used to produce the published results.
+
+## Dependency Management
+
+All core reconstruction functions (VQGAN initialization, feature loading, optimization) are imported from the upstream [`mental_img_recon`](https://github.com/nkmjm/mental_img_recon) submodule.  
+Path resolution is configured via `scripts/config/config_KS_mod.yaml` and automatically resolves both `lib/` (public clone) and root-level (local development) layouts.
+
+### Submodule setup
+
+After cloning with `--recursive`, ensure submodules are initialized:
+```bash
+git submodule update --init --recursive
+```
+
+This populates `lib/mental_img_recon/` and `lib/taming-transformers/` with the required dependencies.
 
 ## License
 This project is licensed under the MIT License.
+
+## Contact
+For questions or access to imagery target stimuli: **shirakawaken0118@gmail.com**
