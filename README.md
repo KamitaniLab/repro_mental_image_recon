@@ -120,9 +120,9 @@ Each figure in the manuscript can be regenerated from the code. Below are the mi
 | **3B** | — | (CC BY 4.0 adoption, not regenerable) | — | — | — |
 | **4A, 4B** | (None) | `uv run python scripts/experiments/recovery_matrix_invert_reps.py && uv run python scripts/experiments/recovery_check_eval.py` | `results/recovery_nocrop25_reps/` | `uv run python scripts/create_figure_assets/Fig_recon_and_identification_errorbar.py` | `assets/fig04/` |
 | **5D, 5E** | Imagery | `uv run python scripts/experiments/compare_SGD_SGLD_recon_for_eval_sampling_variance.py && uv run python scripts/experiments/run_preference_analysis.py` | `results/rep_recon_image_koide-majima_comparing_SGD_updated_sampling_parameters/` | `uv run python scripts/experiments/preference_analysis/preference_stats.py` | `results/rep_recon_image_koide-majima/` |
-| **A5** | (None) | `uv run python scripts/experiments/oat_search_SGD_SGLD_sampling_params.py && uv run python scripts/experiments/oat_dreamsim_matrices.py` | `results/oat_sampling_params/` | `uv run python scripts/create_figure_assets/Fig_oat_composite.py` | `assets/fig07/` |
+| **A5** | (None) | `uv run python scripts/experiments/oat_search_SGD_SGLD_sampling_params.py && uv run python scripts/experiments/oat_dreamsim_matrices.py` | `results/oat_sampling_params/` | `uv run python scripts/create_figure_assets/Fig_oat_composite.py` | `assets/figA5/` |
 | **A6** | Imagery | `uv run python scripts/experiments/sgld_effect_summary.py S1 S2 S3` | `results/sgld_effect_summary/` | `uv run python scripts/create_figure_assets/Fig6A_sgld_systematic_assets.py` | `assets/fig06/` |
-| **A7** | (None) | `uv run python scripts/experiments/check_determinism.py --recon && uv run python scripts/experiments/determinism_sweep.py` | `results/determinism_check/`, `results/determinism_sweep/` | `uv run python scripts/create_figure_assets/Fig_determinism_cpu_vs_gpu.py` | `assets/fig08/` |
+| **A7** | (None) | `uv run python scripts/experiments/check_determinism.py --recon && uv run python scripts/experiments/determinism_sweep.py` | `results/determinism_check/`, `results/determinism_sweep/` | `uv run python scripts/create_figure_assets/Fig_determinism_cpu_vs_gpu.py` | `assets/figA7/` |
 
 ### Figure A2–A4 note
 

@@ -17,7 +17,7 @@ RECON_ROOT = (
     PROJECT_ROOT / "results" / "rep_recon_image_koide-majima_recon_variability_no_seed"
 )
 OUTPUT_PATH = (
-    ensure_directory(PROJECT_ROOT / "assets" / "fig05") / "fig05_sampling_part.pdf"
+    ensure_directory(PROJECT_ROOT / "assets" / "fig06") / "fig06_sampling_part.pdf"
 )
 
 CONDITION_KEY = "original_all"

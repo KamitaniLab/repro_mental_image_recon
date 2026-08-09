@@ -37,7 +37,7 @@ INK_MUTED = '#52514e'
 
 RESULT_DIR = os.path.join('results', 'determinism_check')
 SWEEP_CSV = os.path.join('results', 'determinism_sweep', 'cuda_pairs.csv')
-OUT_DIR = os.path.join('assets', 'fig08')
+OUT_DIR = os.path.join('assets', 'figA7')
 
 
 def load_sweep(path):

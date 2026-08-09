@@ -41,7 +41,7 @@ RECON_ROOTS = {
     "oat": PROJECT_ROOT / "results" / "oat_sampling_params",
     "slice": PROJECT_ROOT / "results" / "lr_a_T_slice",
 }
-DEFAULT_OUT = PROJECT_ROOT / "assets" / "oat_sampling_params" / "oat_composite"
+DEFAULT_OUT = PROJECT_ROOT / "assets" / "figA5" / "oat_composite"
 
 N = 25
 NULL_COLOR = "#9aa0a8"

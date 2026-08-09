@@ -33,7 +33,7 @@ from figure_asset_utils import ensure_directory, project_root
 PROJECT_ROOT = project_root()
 DEFAULT_OAT_DIR = PROJECT_ROOT / "results" / "oat_sampling_params" / "dreamsim_matrices"
 DEFAULT_SLICE_DIR = PROJECT_ROOT / "results" / "lr_a_T_slice" / "dreamsim_matrices"
-DEFAULT_OUT = PROJECT_ROOT / "assets" / "oat_sampling_params" / "oat_slice_summary"
+DEFAULT_OUT = PROJECT_ROOT / "assets" / "figA5" / "oat_slice_summary"
 
 N = 25
 REFERENCE_TAG = "lr_a0.00015_lr_b0.15_g0.055_T1e-06_woL1000_wL500_nR1000"
