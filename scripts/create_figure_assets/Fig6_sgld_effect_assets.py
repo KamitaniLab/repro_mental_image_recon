@@ -18,7 +18,7 @@ from figure_asset_utils import (
 
 PROJECT_ROOT = project_root()
 RECON_ROOT = PROJECT_ROOT / "results" / "rep_recon_image_koide-majima"
-OUTPUT_DIR = ensure_directory(PROJECT_ROOT / "assets" / "fig05")
+OUTPUT_DIR = ensure_directory(PROJECT_ROOT / "assets" / "fig06")
 
 SUBJECT_ID = "S1"
 BASE_CONDITION = "original_all"

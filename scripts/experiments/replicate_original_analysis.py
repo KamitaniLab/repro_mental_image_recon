@@ -330,16 +330,9 @@ if __name__ == "__main__":
         default="original_all",
         choices=[
             "original_all",
-            "CLIPonly_all",
             "wo_SGLD_CLIP_all",
             "VGGonly_all",
             "AdamOnly_all",
-            "original_all_default_SGLD_v2",
-            "original_all_default_SGLD_v2_normal_temp",
-            "original_all_fixed_values_SGLD_v2",
-            "original_all_fixed_values_SGLD_v3",
-            "original_all_fixed_values_SGLD_v2_normal_temp",
-            "original_all_fixed_values_SGLD_v3_normal_temp",
         ],
     )
     args = parser.parse_args()
