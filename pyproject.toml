@@ -51,6 +51,9 @@ torch = [
     { index = "torch-cu128" },
 ]
 
+[tool.uv.extra-build-dependencies]
+clip = ["setuptools<81"]
+
 [[tool.uv.index]]
 name = "torch-cu128"
 url = "https://download.pytorch.org/whl/cu128"

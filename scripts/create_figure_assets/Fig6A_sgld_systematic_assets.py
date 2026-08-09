@@ -28,7 +28,7 @@ from figure_asset_utils import SUBJECTS, ensure_directory, project_root
 
 PROJECT_ROOT = project_root()
 DEFAULT_SUMMARY_DIR = PROJECT_ROOT / "results" / "sgld_effect_summary"
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "assets" / "fig05"
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "assets" / "fig06"
 
 SUBJECT_COLORS = {"S1": "#1b9e77", "S2": "#d95f02", "S3": "#7570b3"}
 

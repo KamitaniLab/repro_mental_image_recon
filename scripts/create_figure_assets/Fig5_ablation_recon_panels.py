@@ -35,7 +35,7 @@ from figure_asset_utils import (
 
 PROJECT_ROOT = project_root()
 DEFAULT_RECON_ROOT = PROJECT_ROOT / "results" / "rep_recon_image_koide-majima"
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "assets" / "fig04"
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "assets" / "fig05"
 
 COMPARISON_CONDITIONS = {
     "Koide-Majima": "original_all",
