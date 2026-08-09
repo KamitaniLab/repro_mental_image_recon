@@ -1,9 +1,14 @@
-"""Generate reconstruction variability panel for Figure 2D."""
+"""Generate reconstruction variability panel for Figure 3A.
+
+Four of the 10 runs, selected at random (seed-fixed for reproducibility), are displayed.
+"""
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Sequence
+
+import numpy as np
 
 from fig_utils import GroupImageDrawer
 
@@ -30,7 +35,10 @@ STIMULUS_NAME_LIST = (
     "imageryExpStim22_inat_airliner.tiff",
 )
 
-ITERATIONS = tuple(f"iter{idx:02}" for idx in range(4, 8))
+# Four runs selected at random; seeded for reproducibility
+_rng = np.random.RandomState(42)
+_selected = sorted(_rng.choice(range(1, 11), size=4, replace=False))
+ITERATIONS = tuple(f"iter{idx:02d}" for idx in _selected)
 
 
 def _resolve_recon_root() -> Path:

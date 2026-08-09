@@ -26,7 +26,7 @@ Checks, cheapest first:
 Run it once on GPU and once with --device cpu: CPU has deterministic kernels for
 these ops, so the pair of results tells the two causes apart.
 
-Everything is written to results/_determinism_check/ (inside the repo, so it
+Everything is written to results/determinism_check/ (inside the repo, so it
 survives a reboot).
 """
 import argparse
@@ -42,7 +42,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import recon_func_reproducible as R  # noqa: E402
 
-OUT_DIR = os.path.join('results', '_determinism_check')
+OUT_DIR = os.path.join('results', 'determinism_check')
 
 # Steps at which the latent is recorded. Langevin steps are numbered n_sgd + t
 # so both phases share one axis.

@@ -35,9 +35,9 @@ LABEL = {'cpu': 'CPU', 'cuda': 'GPU (CUDA)'}
 INK = '#0b0b0b'
 INK_MUTED = '#52514e'
 
-RESULT_DIR = os.path.join('results', '_determinism_check')
-SWEEP_CSV = os.path.join('results', '_determinism_sweep', 'cuda_pairs.csv')
-OUT_DIR = os.path.join('assets', 'determinism')
+RESULT_DIR = os.path.join('results', 'determinism_check')
+SWEEP_CSV = os.path.join('results', 'determinism_sweep', 'cuda_pairs.csv')
+OUT_DIR = os.path.join('assets', 'fig08')
 
 
 def load_sweep(path):
@@ -86,12 +86,24 @@ def main():
              for d in args.devices}
 
     ncol = len(args.devices)
+    # The other manuscript figures are typeset ~520 pt wide; emitting this one at
+    # the same width keeps it from being the most shrunk figure in a shared frame.
+    # Both dimensions scale together, so the layout is unchanged and the labels
+    # (fixed pt sizes) end up proportionally larger on the page.
+    fig_w = 7.6                             # trims to ~520 pt after the tight bbox
+    # Height follows from the image grid: three stacked squares plus hspace, so the
+    # rows stay flush instead of leaving slack between them. Anything taller only
+    # adds whitespace, because the panels keep their 1:1 aspect.
+    col_frac = 1 / (ncol + 0.4 + 1.35 * ncol)   # one image column, as a width share
+    img_w = fig_w * (0.93 - 0.13) * col_frac
+    fig = plt.figure(figsize=(fig_w, 3 * img_w * 1.08 / (0.865 - 0.10)))
     # A blank spacer column keeps the bar chart's y-label off the image grid.
-    fig = plt.figure(figsize=(2.6 + 1.5 * ncol + 3.6, 6.2))
+    # left/right hold the row labels and the 'mean' callout inside the canvas, so
+    # the tight bbox does not grow past the width set above.
     gs = GridSpec(3, ncol + 2, figure=fig,
-                  width_ratios=[1] * ncol + [0.5, 1.75 * ncol],
+                  width_ratios=[1] * ncol + [0.4, 1.35 * ncol],
                   hspace=0.08, wspace=0.06,
-                  left=0.11, right=0.97, top=0.86, bottom=0.12)
+                  left=0.13, right=0.93, top=0.865, bottom=0.10)
 
     # No target row: the right panel pools 75 images, so showing one target
     # beside it would imply the distribution belongs to that image.
@@ -114,19 +126,19 @@ def main():
                 s.set_edgecolor('#d8d7d2')
                 s.set_linewidth(0.8)
             if ri == 0:
-                ax.set_title(LABEL[dev], fontsize=11, color=COLOR[dev],
+                ax.set_title(LABEL[dev], fontsize=8, color=COLOR[dev],
                              fontweight='bold', pad=6)
             if ci == 0:
-                ax.set_ylabel(rows[ri], fontsize=9.5, color=INK_MUTED,
+                ax.set_ylabel(rows[ri], fontsize=8, color=INK_MUTED,
                               rotation=0, ha='right', va='center', labelpad=10)
 
     # Legend for the diff row: the intensity ramp the raw difference is read on.
-    cax = fig.add_axes([0.115, 0.055, 0.105 * ncol, 0.011])
+    cax = fig.add_axes([0.135, 0.042, 0.107 * ncol, 0.013])
     cax.imshow(np.linspace(0, 1, 256).reshape(1, -1), cmap='gray',
                aspect='auto', vmin=0, vmax=1)
     cax.set_yticks([])
     cax.set_xticks([0, 63.75, 127.5, 191.25, 255])
-    cax.set_xticklabels(['0', '64', '128', '192', '255'], fontsize=7,
+    cax.set_xticklabels(['0', '64', '128', '192', '255'], fontsize=8,
                         color=INK_MUTED)
     cax.set_xlabel('|difference| per channel  (black = identical)',
                    fontsize=8, color=INK_MUTED, labelpad=2)
@@ -149,10 +161,10 @@ def main():
             v = stats[d]['mean']
             txt = '0\n(bit-identical)' if stats[d]['identical'] else f'{v:.1f}'
             axb.text(x, v + top * 0.02, txt, ha='center', va='bottom',
-                     fontsize=10, color=INK, linespacing=1.4,
+                     fontsize=8, color=INK, linespacing=1.4,
                      fontweight='bold' if not stats[d]['identical'] else 'normal')
         axb.set_xticks(xs)
-        axb.set_xticklabels([LABEL[d] for d in args.devices], fontsize=10, color=INK)
+        axb.set_xticklabels([LABEL[d] for d in args.devices], fontsize=8, color=INK)
     else:
         # Subjects pooled: one distribution over every same-seed comparison.
         subs = sorted(sweep)
@@ -163,8 +175,8 @@ def main():
         # CPU: every pair was bit-identical, so the whole distribution sits at 0.
         axb.scatter([0], [0], s=46, color=COLOR['cpu'], zorder=4,
                     edgecolor='white', linewidth=0.8)
-        axb.text(0, top * 0.03, '0\n(all bit-identical)', ha='center', va='bottom',
-                 fontsize=9.5, color=INK, linespacing=1.4)
+        axb.text(0, top * 0.03, '0\n(n = 1, bit-identical)', ha='center', va='bottom',
+                 fontsize=8, color=INK, linespacing=1.4)
 
         x = 1 + (rng.random(len(v)) - 0.5) * 0.34
         axb.scatter(x, v, s=24, color=COLOR['cuda'], alpha=0.5, zorder=3,
@@ -175,17 +187,17 @@ def main():
                  zorder=5, solid_capstyle='round')
         for y, lab in ((v.max(), f'max {v.max():.1f}'),
                        (v.min(), f'min {v.min():.1f}')):
-            axb.text(1.34, y, lab, ha='left', va='center', fontsize=8.5,
+            axb.text(1.34, y, lab, ha='left', va='center', fontsize=8,
                      color=INK_MUTED)
         axb.text(1.34, v.mean(), f'mean {v.mean():.1f}', ha='left', va='center',
-                 fontsize=9.5, color=INK, fontweight='bold')
+                 fontsize=8, color=INK, fontweight='bold')
 
         axb.set_xticks([0, 1])
-        axb.set_xticklabels(['CPU', 'GPU (CUDA)'], fontsize=10, color=INK)
+        axb.set_xticklabels(['CPU', 'GPU (CUDA)'], fontsize=8, color=INK)
         axb.set_xlim(-0.6, 2.0)
 
     axb.set_ylabel('mean |pixel difference| between two same-seed runs',
-                   fontsize=10, color=INK_MUTED, labelpad=8)
+                   fontsize=8, color=INK_MUTED, labelpad=8)
     axb.set_ylim(0, top)
     axb.grid(axis='y', color='#e8e7e2', linewidth=0.8, zorder=0)
     axb.set_axisbelow(True)
@@ -193,16 +205,19 @@ def main():
         axb.spines[side].set_visible(False)
     for side in ('left', 'bottom'):
         axb.spines[side].set_color('#d8d7d2')
-    axb.tick_params(colors=INK_MUTED, labelsize=9, length=3)
+    axb.tick_params(colors=INK_MUTED, labelsize=8, length=3)
 
     stage_name = ('full schedule (Adam + SGLD)' if args.stage == 'final'
                   else 'Adam phase only')
     fig.suptitle('Same seed, same code: bit-reproducible on CPU, not on GPU',
-                 fontsize=13.5, color=INK, fontweight='bold', y=0.978)
-    fig.text(0.5, 0.925,
-             "seed-controlled version of Koide-Majima's implementation   |   "
+                 fontsize=10, color=INK, fontweight='bold', y=0.982)
+    # Two lines: on the narrower canvas a single-line subtitle would be the widest
+    # element and would set the tight bbox, undoing the width match.
+    fig.text(0.5, 0.945,
+             "seed-controlled version of Koide-Majima's implementation\n"
              f'two runs, identical seed   |   {stage_name}',
-             ha='center', fontsize=9.5, color=INK_MUTED)
+             ha='center', va='top', fontsize=8, color=INK_MUTED,
+             linespacing=1.5)
 
     out = args.out or os.path.join(OUT_DIR, f'Fig_determinism_{args.stage}')
     os.makedirs(os.path.dirname(out), exist_ok=True)

@@ -109,9 +109,24 @@ uv run python scripts/create_figure_assets/Fig5_ablation_assets.py
 # ... and so on for other figure scripts
 ```
 
+### Reproducing specific figures
+
+Each figure in the manuscript can be regenerated from the code. Below are the minimal commands for each key figure (assumes imagery stimuli are available where required):
+
+| Figure | Requirements | Generate analysis | Results location | Generate figure | Output |
+|--------|---|---|---|---|---|
+| **2D, 2E** | Imagery | `uv run python scripts/experiments/recon_distance_distribution.py` | `results/rep_recon_image_koide-majima/comparing_SGD_updated_sampling_parameters/` | `uv run python scripts/create_figure_assets/Fig_best_pairs.py --csv results/.../distance_summary_dreamsim/distances_dreamsim.csv --group S2` | `assets/fig02/` |
+| **3A** | Imagery | `uv run python scripts/experiments/recon_image_koide-majima_methods_multi_times_no_seed.py` | `results/rep_recon_image_koide-majima_recon_variability_no_seed/` | `uv run python scripts/create_figure_assets/Fig3A_variability_assets.py` | `assets/fig03/` |
+| **3B** | — | (CC BY 4.0 adoption, not regenerable) | — | — | — |
+| **4A, 4B** | (None) | `uv run python scripts/experiments/recovery_matrix_invert_reps.py && uv run python scripts/experiments/recovery_check_eval.py` | `results/recovery_nocrop25_reps/` | `uv run python scripts/create_figure_assets/Fig_recon_and_identification_errorbar.py` | `assets/fig04/` |
+| **5D, 5E** | Imagery | `uv run python scripts/experiments/compare_SGD_SGLD_recon_for_eval_sampling_variance.py && uv run python scripts/experiments/run_preference_analysis.py` | `results/rep_recon_image_koide-majima_comparing_SGD_updated_sampling_parameters/` | `uv run python scripts/experiments/preference_analysis/preference_stats.py` | `results/rep_recon_image_koide-majima/` |
+| **A5** | (None) | `uv run python scripts/experiments/oat_search_SGD_SGLD_sampling_params.py && uv run python scripts/experiments/oat_dreamsim_matrices.py` | `results/oat_sampling_params/` | `uv run python scripts/create_figure_assets/Fig_oat_composite.py` | `assets/fig07/` |
+| **A6** | Imagery | `uv run python scripts/experiments/sgld_effect_summary.py S1 S2 S3` | `results/sgld_effect_summary/` | `uv run python scripts/create_figure_assets/Fig6A_sgld_systematic_assets.py` | `assets/fig06/` |
+| **A7** | (None) | `uv run python scripts/experiments/check_determinism.py --recon && uv run python scripts/experiments/determinism_sweep.py` | `results/determinism_check/`, `results/determinism_sweep/` | `uv run python scripts/create_figure_assets/Fig_determinism_cpu_vs_gpu.py` | `assets/fig08/` |
+
 ### Figure A2–A4 note
 
-Panels A2–A4 include a reference row showing results from an unpublished "revised iCNN" implementation (Tanaka et al., 2024; Nagano et al., in preparation). This variant is **not** included in this repository — those reference rows are external image assets. The ablation results for the main conditions (SGLD+CLIP, No SGLD+CLIP, SGLD+No CLIP, No SGLD+No CLIP) are fully reproducible via Unit 6.
+Panels A2–A4 include a reference row showing results from an unpublished "revised iCNN" implementation (Tanaka et al., 2024; Nagano et al., in preparation). This variant is **not** included in this repository — those reference rows are external image assets. The ablation results for the main conditions (SGLD+CLIP, No SGLD+CLIP, SGLD+No CLIP, No SGLD+No CLIP) are fully reproducible via the commands in the table above.
 
 ## Seed-Reproducible Reconstruction
 

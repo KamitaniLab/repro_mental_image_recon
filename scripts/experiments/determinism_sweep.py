@@ -46,7 +46,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import recon_func_reproducible as R  # noqa: E402
 
-OUT_DIR = os.path.join('results', '_determinism_sweep')
+OUT_DIR = os.path.join('results', 'determinism_sweep')
 
 
 def resolve_path(p):
