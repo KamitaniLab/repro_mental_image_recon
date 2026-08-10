@@ -12,9 +12,9 @@ conditions alone.
 
 Examples
 --------
-    python Fig5_ablation_recon_panels.py                        # S1/S2/S3
-    python Fig5_ablation_recon_panels.py --subjects S2          # single subject
-    python Fig5_ablation_recon_panels.py --deeprecon-root DIR   # add the reference row
+    python FigA2A4_ablation_recon_panels.py                        # S1/S2/S3
+    python FigA2A4_ablation_recon_panels.py --subjects S2          # single subject
+    python FigA2A4_ablation_recon_panels.py --deeprecon-root DIR   # add the reference row
 """
 from __future__ import annotations
 
@@ -46,10 +46,10 @@ COMPARISON_CONDITIONS = {
 }
 
 # Reference-row reconstructions from a separate iCNN implementation, produced outside
-# this repository (see the Figure A2-A4 note in README). Subjects are keyed there by
-# initials rather than S1/S2/S3.
+# this repository (see the Figure A2-A4 note in README). That tree names its subject
+# directories however it likes, so the caller supplies them with
+# --deeprecon-subject-dirs, positionally matched to --subjects.
 DEEPRECON_LABEL = "iCNN (reference)"
-DEEPRECON_SUBJECT_MAP = {"S1": "TH", "S2": "AM", "S3": "ES"}
 
 # One appendix figure per subject.
 APPENDIX_FIGURE = {"S1": "A2", "S2": "A3", "S3": "A4"}
@@ -58,23 +58,18 @@ PANEL_FILENAME = "Fig{appendix}_{subject}_recon_image_compare.pdf"
 
 
 def load_deeprecon_images(
-    subject: str,
+    subject_dir: str,
     image_names: Sequence[str],
     deeprecon_root: Path,
 ) -> list[Image.Image]:
-    """Load DeepRecon reconstructions for ``subject`` in ``image_names`` order.
+    """Load DeepRecon reconstructions from ``subject_dir`` in ``image_names`` order.
 
     Files are named ``recon_image-<stimulus stem>.tiff``, so stimuli are matched
     by name rather than by the positional fallback used for the ablation
     reconstructions (that directory also contains ``imageryExpStim16_fixation``,
     which would shift a position-based mapping).
     """
-    initials = DEEPRECON_SUBJECT_MAP.get(subject)
-    if initials is None:
-        raise KeyError(
-            f"No DeepRecon subject mapped to '{subject}' (known: {sorted(DEEPRECON_SUBJECT_MAP)})"
-        )
-    recon_dir = deeprecon_root / initials / "VC"
+    recon_dir = deeprecon_root / subject_dir / "VC"
 
     images: list[Image.Image] = []
     for name in image_names:
@@ -93,6 +88,7 @@ def export_panel(
     recon_root: Path,
     output_dir: Path,
     deeprecon_root: Path | None = None,
+    deeprecon_subject_dir: str | None = None,
 ) -> Path:
     """Draw one condition-comparison panel for ``subject`` and save it as PDF."""
     conditions = [{"title": "Target", "images": load_target_images(image_names)}]
@@ -104,7 +100,9 @@ def export_panel(
         conditions.append(
             {
                 "title": DEEPRECON_LABEL,
-                "images": load_deeprecon_images(subject, image_names, deeprecon_root),
+                "images": load_deeprecon_images(
+                    deeprecon_subject_dir or subject, image_names, deeprecon_root
+                ),
             }
         )
 
@@ -140,18 +138,34 @@ def parse_args() -> argparse.Namespace:
         "--deeprecon-root",
         type=Path,
         default=None,
-        help="directory holding <initials>/VC reference tiff reconstructions. Omitted "
+        help="directory holding <subject dir>/VC reference tiff reconstructions. Omitted "
              "by default: those reconstructions come from a separate repository, so "
              "the reference row is drawn only when this is given.",
     )
-    return parser.parse_args()
+    parser.add_argument(
+        "--deeprecon-subject-dirs",
+        nargs="+",
+        default=None,
+        help="subject directory names inside --deeprecon-root, in the same order as "
+             "--subjects (that tree may key subjects differently). Defaults to the "
+             "--subjects ids themselves.",
+    )
+    args = parser.parse_args()
+    if args.deeprecon_subject_dirs is not None and len(args.deeprecon_subject_dirs) != len(args.subjects):
+        parser.error(
+            f"--deeprecon-subject-dirs takes one name per --subjects entry "
+            f"({len(args.subjects)} given: {' '.join(args.subjects)})"
+        )
+    return args
 
 
 def main() -> None:
     args = parse_args()
     output_dir = ensure_directory(args.output_dir)
 
-    for subject in args.subjects:
+    deeprecon_dirs = args.deeprecon_subject_dirs or args.subjects
+
+    for subject, deeprecon_dir in zip(args.subjects, deeprecon_dirs):
         saved = export_panel(
             subject,
             SOURCE_IMAGE_NAMES,
@@ -159,6 +173,7 @@ def main() -> None:
             args.recon_root,
             output_dir,
             args.deeprecon_root,
+            deeprecon_dir,
         )
         print(f"saved {saved}")
 
