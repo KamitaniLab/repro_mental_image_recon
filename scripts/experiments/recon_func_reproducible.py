@@ -32,8 +32,7 @@ import torch
 import torch.optim as optim
 from torchvision import transforms
 import copy
-from PIL import Image, ImageOps
-import matplotlib.pyplot as plt
+from PIL import Image
 from tqdm import tqdm
 
 device_default = torch.device("cuda:0")

@@ -109,7 +109,6 @@ def main(reconMethod='original_all', save_base_dir = './test', seed=None,
     targetID_list = np.arange(25)
     if targets is not None:
         targetID_list = np.array(targets)
-    image_label_list = ['Img{:04d}'.format(i) for i in range(1, 27)]
 
     #reconMethod = 'original' # select from 'original' (default), 'Langevin', 'withoutLangevin'
 
@@ -136,29 +135,15 @@ def main(reconMethod='original_all', save_base_dir = './test', seed=None,
     numReps = dt_cfg['recon_params'][reconMethod]['numReps']
     similarity = dt_cfg['recon_params'][reconMethod]['similarity']
 
-    if reconMethod == 'Langevin' or reconMethod == 'original':
-        lr_gamma = dt_cfg['recon_params'][reconMethod]['Langevin']['lr_gamma']
-        lr_a = dt_cfg['recon_params'][reconMethod]['Langevin']['lr_a']
-        lr_b = dt_cfg['recon_params'][reconMethod]['Langevin']['lr_b']
-        T_langevin = dt_cfg['recon_params'][reconMethod]['Langevin']['T']
-    if reconMethod == 'Langevin' or reconMethod == 'original':
-        lr_gamma = dt_cfg['recon_params'][reconMethod]['Langevin']['lr_gamma']
-        lr_a = dt_cfg['recon_params'][reconMethod]['Langevin']['lr_a']
-        lr_b = dt_cfg['recon_params'][reconMethod]['Langevin']['lr_b']
-        T_langevin = dt_cfg['recon_params'][reconMethod]['Langevin']['T']
     try:
-        lr_gamma = dt_cfg['recon_params'][reconMethod]['Langevin']['lr_gamma']
-        lr_a = dt_cfg['recon_params'][reconMethod]['Langevin']['lr_a']
-        lr_b = dt_cfg['recon_params'][reconMethod]['Langevin']['lr_b']
-        T_langevin = dt_cfg['recon_params'][reconMethod]['Langevin']['T']
-        
-        print(lr_gamma)
-        print(lr_a)
-        print(lr_b)
-        print(T_langevin)
-    
-    except:
-        pass
+        langevin = dt_cfg['recon_params'][reconMethod]['Langevin']
+        lr_gamma = langevin['lr_gamma']
+        lr_a = langevin['lr_a']
+        lr_b = langevin['lr_b']
+        T_langevin = langevin['T']
+    except KeyError as e:
+        raise ValueError(f'Langevin config does not include: {e}')
+    print(f'Langevin: lr_gamma={lr_gamma} lr_a={lr_a} lr_b={lr_b} T={T_langevin}')
     # set parameters
     numReps_withoutLangevin = dt_cfg['recon_params'][reconMethod]["numReps_withoutLangevin"]#1000 # (default) 1000
     numReps_Langevin = dt_cfg['recon_params'][reconMethod]["numReps_withLangevin"]#500 # (default) 500
@@ -179,11 +164,9 @@ def main(reconMethod='original_all', save_base_dir = './test', seed=None,
                 else:
                     tid = targetID
                 # %%
-                targetImg_, targetimname = get_target_image(targetID, targetimpath)
+                _, targetimname = get_target_image(targetID, targetimpath)
                 # Numbered by targetID, not by the loop position, so a --targets
                 # subset produces the same filenames as the full sweep.
-                recon_name = f"Stim{targetID+1:02}_{targetimname}"
-                true_image_dir = f'./data/ImageryDeeprecon/source'
                 # VGG
                 list_path_vgg = list()
                 for t_layername in used_layers_VGG:
@@ -328,7 +311,6 @@ def main(reconMethod='original_all', save_base_dir = './test', seed=None,
                 with open(save_file_name, 'wb') as f:
                     pickle.dump(save_dict, f)
                 # save images
-                save_recon_image = f'{save_dir}/{recon_name}.tiff'
                 image_label = 'Img{:04d}'.format(tid+1)
                 save_name = f'{save_dir}/recon_img_normalized-{image_label}.jpg'
                 recImg.save(save_name)

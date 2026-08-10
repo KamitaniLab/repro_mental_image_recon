@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import argparse
 import pickle
+import sys
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping
 
 import numpy as np
 import torch
-import yaml
 from PIL import Image
 
 from bdpy.dl.torch.domain import ComposedDomain, image_domain
@@ -23,7 +23,11 @@ from bdpy.recon.torch.modules.encoder import SimpleEncoder
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
-from recon_utils import get_target_image  # noqa: E402  pylint: disable=wrong-import-position
+# SOURCE_IMAGE_NAMES is the canonical target-index -> stimulus-file mapping; import it
+# rather than restating it here. The stimuli themselves come from data/source, the same
+# images the figures show, instead of the downsampled copies in the label YAML.
+sys.path.insert(0, str(REPO_ROOT / "scripts" / "create_figure_assets"))
+from figure_asset_utils import SOURCE_IMAGE_NAMES, resolve_data_dir  # noqa: E402
 
 COMPARISON_CONFIGS = {
     "cand2": {
@@ -81,6 +85,12 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
         help="Directory that stores reconstruction outputs.",
     )
     parser.add_argument(
+        "--source-dir",
+        type=Path,
+        default=None,
+        help="target stimuli (default: data/source, or $IMAGERY_SOURCE_DIR).",
+    )
+    parser.add_argument(
         "--device",
         default="cuda",
         help="Computation device identifier (defaults to CUDA when available).",
@@ -124,13 +134,16 @@ class CLIPEncoder(SimpleEncoder):
         return features
 
 
-def load_stimuli(target_image_path: str) -> List[Image.Image]:
-    images: List[Image.Image] = []
-    for _subject in SUBJECTS:
-        for target_id in TARGET_IDS:
-            array, _ = get_target_image(target_id, target_image_path)
-            images.append(Image.fromarray(array).convert("RGB").resize((224, 224)))
-    return images
+def load_stimuli(source_dir: Path) -> List[Image.Image]:
+    """The 25 targets, repeated once per subject to match the reconstruction order."""
+    per_subject = []
+    for target_id in TARGET_IDS:
+        path = source_dir / SOURCE_IMAGE_NAMES[target_id]
+        if not path.exists():
+            raise FileNotFoundError(f"Missing stimulus image: {path}")
+        with Image.open(path) as handle:
+            per_subject.append(handle.convert("RGB").resize((224, 224)))
+    return [image for _ in SUBJECTS for image in per_subject]
 
 
 def _stimulus_label(target_id: int) -> str:
@@ -355,11 +368,7 @@ def main(argv: Iterable[str] | None = None) -> None:
     torch.manual_seed(SEED)
     np.random.seed(SEED)
 
-    config_dir = REPO_ROOT / "scripts" / "config"
-    with (config_dir / "demo_params.yaml").open("rb") as handle:
-        demo_params = yaml.safe_load(handle)
-
-    target_images = load_stimuli(demo_params["dt_targetimages_path"])
+    target_images = load_stimuli(args.source_dir or resolve_data_dir())
     comparison = COMPARISON_CONFIGS[args.comparison]
     recon_sets = collect_recon_sets(args.results_dir, comparison["recon_methods"])
 

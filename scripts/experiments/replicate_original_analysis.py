@@ -126,7 +126,7 @@ def main(reconMethod="original_all", save_base_dir=f"{RESULT_ROOT}/original_all"
             else:
                 tid = targetID
             # %%
-            targetImg_, targetimname = get_target_image(targetID, targetimpath)
+            _, targetimname = get_target_image(targetID, targetimpath)
 
             # VGG
             list_path_vgg = list()

@@ -31,18 +31,15 @@ from pathlib import Path
 
 import numpy as np
 import torch
-import yaml
 from PIL import Image
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-# Load config for mental_img_recon path
-with open(str(PROJECT_ROOT / "scripts/config/config_KS_mod.yaml"), "rb") as f:
-    dt_cfg = yaml.safe_load(f)
-mental_img_recon_dir = dt_cfg["file_path"]["mental_img_recon_dir"]
-sys.path.append(mental_img_recon_dir)
-
-from recon_utils import get_target_image  # noqa: E402
+# SOURCE_IMAGE_NAMES is the canonical target-index -> stimulus-file mapping (its
+# ordering is what makes index i line up with the reconstructions; see its
+# definition). Import it rather than restating it, so the two cannot drift.
+sys.path.insert(0, str(PROJECT_ROOT / "scripts" / "create_figure_assets"))
+from figure_asset_utils import SOURCE_IMAGE_NAMES, resolve_data_dir  # noqa: E402
 
 DEFAULT_ROOT = PROJECT_ROOT / "results" / "oat_sampling_params"
 SUBJECTS = ("S1", "S2", "S3")
@@ -74,6 +71,8 @@ def main() -> None:
                         help="condition directory names (default: all under --root)")
     parser.add_argument("--subjects", nargs="+", default=list(SUBJECTS),
                         help="subjects present under each condition")
+    parser.add_argument("--source-dir", type=Path, default=None,
+                        help="target stimuli (default: data/source, or $IMAGERY_SOURCE_DIR)")
     parser.add_argument("--overwrite", action="store_true",
                         help="recompute conditions whose .npz already exists")
     args = parser.parse_args()
@@ -83,14 +82,14 @@ def main() -> None:
 
     from dreamsim import dreamsim
 
-    prm = yaml.safe_load((PROJECT_ROOT / "scripts/config/demo_params.yaml").read_bytes())
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model, preprocess = dreamsim(pretrained=True, device=device)
 
-    targets = [
-        Image.fromarray(get_target_image(i, str(PROJECT_ROOT / prm["dt_targetimages_path"]))[0])
-        for i in range(N_TARGETS)
-    ]
+    source_dir = Path(args.source_dir) if args.source_dir else resolve_data_dir()
+    missing = [n for n in SOURCE_IMAGE_NAMES[:N_TARGETS] if not (source_dir / n).exists()]
+    if missing:
+        raise SystemExit(f"missing stimuli in {source_dir}: {', '.join(missing)}")
+    targets = [Image.open(source_dir / n) for n in SOURCE_IMAGE_NAMES[:N_TARGETS]]
     target_batch = torch.cat([preprocess(t.convert("RGB")).to(device) for t in targets])
 
     tags = args.tags or sorted(p.name for p in args.root.iterdir()

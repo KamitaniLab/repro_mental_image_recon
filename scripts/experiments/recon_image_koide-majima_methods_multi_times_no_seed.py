@@ -143,7 +143,7 @@ def main(
                 else:
                     tid = targetID
                 # %%
-                targetImg_, targetimname = get_target_image(targetID, targetimpath)
+                _, targetimname = get_target_image(targetID, targetimpath)
                 # VGG
                 list_path_vgg = list()
                 for t_layername in used_layers_VGG:
