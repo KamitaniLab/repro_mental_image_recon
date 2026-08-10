@@ -53,7 +53,7 @@ All analyses are organized by **analysis unit** (pipeline), each producing one o
 | 1 | Reconstruction generation & representativeness | 2C, A1 | ✅ Yes | `replicate_original_analysis.py original_all` | `Fig2C_assets.py` |
 | 2 | DreamSim distance distribution & pairs | 2D, 2E | ✅ Yes | `recon_distance_distribution.py --recon_root <run>` | `Fig_best_pairs.py`, `recon_distance_examples.py`, `export_dreamsim_matrices_csv.py` |
 | 3 | Run-to-run variability | 3A | ✅ Yes | `recon_image_koide-majima_methods_multi_times_no_seed.py original_all` | `Fig3A_variability_assets.py` |
-| 5 | Circular evaluation / recovery matrix | 4A, 4B | ❌ No | `recovery_matrix_invert_reps.py` + `recovery_check_eval.py` | `Fig_recon_and_identification_errorbar.py` |
+| 5 | Circular evaluation / recovery matrix | 4A, 4B | ❌ No | `run_recovery_reps.sh` (drives `recovery_matrix_invert_reps.py` + `recovery_check_eval.py`) | `Fig_recon_and_identification_errorbar.py` |
 | 6 | SGLD/CLIP ablation | 5A–E, A2–A4 | ✅ Yes | `compare_SGD_SGLD_recon_for_eval_sampling_variance.py` + `run_preference_analysis.py` | `Fig5_ablation_assets.py`, `Fig5_ablation_recon_panels.py`, `scripts/experiments/preference_analysis/preference_stats.py` |
 | 7 | SGLD sampling effect | 6A–E, A6 | ✅ Yes | `replicate_original_analysis.py original_all` → `sgld_effect_summary.py` | `Fig6_sgld_effect_assets.py`, `Fig6_sgld_effect_diagnostic_assets.py`, `Fig6A_sgld_systematic_assets.py` |
 | 8 | SGLD hyperparameter sweep (OAT) | A5 | ❌ No | `oat_search_SGD_SGLD_sampling_params.py` + `oat_dreamsim_matrices.py` | `Fig_oat_composite.py`, `Fig_oat_dreamsim_matrix.py`, `Fig_oat_slice_summary.py` |
@@ -82,9 +82,10 @@ To run analyses that require imagery (Units 1–4, 6–7), you must provide the 
 **For users WITHOUT imagery** (Units 5, 8, 9 only):
 ```bash
 # Circular evaluation with noise targets (Unit 5)
-uv run python scripts/experiments/recovery_matrix_invert_reps.py
-uv run python scripts/experiments/recovery_check_eval.py
-uv run python scripts/create_figure_assets/Fig_recon_and_identification_errorbar.py
+# 10 repetitions x 4 optimization spaces; each is a full inversion + evaluation.
+bash scripts/experiments/run_recovery_reps.sh
+uv run python scripts/create_figure_assets/Fig_recon_and_identification_errorbar.py \
+    --reps_root results/recovery_from_rand_images --err sd
 
 # OAT hyperparameter sweep (Unit 8)
 uv run python scripts/experiments/oat_search_SGD_SGLD_sampling_params.py
@@ -118,7 +119,7 @@ Each figure in the manuscript can be regenerated from the code. Below are the mi
 |--------|---|---|---|---|---|
 | **2D, 2E** | Imagery | `uv run python scripts/experiments/recon_distance_distribution.py --recon_root <run> --method original_all` | `<run>/original_all/distance_summary/` (`distances_{metric}.csv`, `matrices_{metric}.npz`, distribution plots, `summary_*.txt`) | `uv run python scripts/create_figure_assets/Fig_best_pairs.py --csv <run>/original_all/distance_summary/distances_dreamsim.csv --subject S2` | `assets/fig02/` |
 | **3A** | Imagery | `uv run python scripts/experiments/recon_image_koide-majima_methods_multi_times_no_seed.py original_all` | `results/rep_recon_image_koide-majima_recon_variability_no_seed/` | `uv run python scripts/create_figure_assets/Fig3A_variability_assets.py` | `assets/fig03/` (one PDF per stimulus) |
-| **4A, 4B** | (None) | `uv run python scripts/experiments/recovery_matrix_invert_reps.py && uv run python scripts/experiments/recovery_check_eval.py` | `results/recovery_nocrop25_reps/` | `uv run python scripts/create_figure_assets/Fig_recon_and_identification_errorbar.py` | `assets/fig04/` |
+| **4A, 4B** | (None) | `bash scripts/experiments/run_recovery_reps.sh` | `results/recovery_from_rand_images/rep{00..09}/<opt_space>/` (`source/`, `recovered/`, `recovery_check_identification.pkl`) | `uv run python scripts/create_figure_assets/Fig_recon_and_identification_errorbar.py --reps_root results/recovery_from_rand_images --err sd` | `assets/fig04/` |
 | **5D, 5E** | Imagery | `uv run python scripts/experiments/compare_SGD_SGLD_recon_for_eval_sampling_variance.py && uv run python scripts/experiments/run_preference_analysis.py` | `results/rep_recon_image_koide-majima_comparing_SGD_updated_sampling_parameters/` | `uv run python scripts/experiments/preference_analysis/preference_stats.py` | `results/rep_recon_image_koide-majima/` |
 | **A5** | (None) | `uv run python scripts/experiments/oat_search_SGD_SGLD_sampling_params.py && uv run python scripts/experiments/oat_dreamsim_matrices.py` | `results/oat_sampling_params/` | `uv run python scripts/create_figure_assets/Fig_oat_composite.py` | `assets/figA5/` |
 | **A6** | Imagery | `uv run python scripts/experiments/sgld_effect_summary.py S1 S2 S3` | `results/sgld_effect_summary/` | `uv run python scripts/create_figure_assets/Fig6A_sgld_systematic_assets.py` | `assets/fig06/` |

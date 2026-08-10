@@ -47,7 +47,9 @@ for i in "${REPS[@]}"; do
   done
 done
 
+# No --root: it defaults to the first rep, so the example images come from a seed the
+# bars actually summarise. Naming an unrelated single run there is what the figure
+# script warns against.
 echo "[run] DONE reps=${REPS[*]}. Make the figure with:"
 echo "  uv run python scripts/create_figure_assets/Fig_recon_and_identification_errorbar.py \\"
-echo "      --root results/recovery_nocrop25 --reps_root $OUT_ROOT --err sd \\"
-echo "      --out $OUT_ROOT/fig_recon_and_identification_errorbar"
+echo "      --reps_root $OUT_ROOT --err sd"

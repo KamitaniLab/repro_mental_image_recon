@@ -101,13 +101,14 @@ def load_clip_enc(name, device):
     if name in OPENAI_CLIP_NAME:
         import clip
         model, _ = clip.load(OPENAI_CLIP_NAME[name], jit=False, device=device)
-        enc = lambda x: model.encode_image(x)
     else:  # clip_laion
         import open_clip
         model, _, _ = open_clip.create_model_and_transforms(
             "ViT-B-32", pretrained="laion2b_s34b_b79k", device=device)
-        enc = lambda x: model.encode_image(x)
     model.eval()
+
+    def enc(x):
+        return model.encode_image(x)
     return enc
 
 
@@ -211,7 +212,9 @@ _CLIP_EMB_EVALS = set(OPENAI_CLIP_NAME) | {"clip_laion"}
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out_dir", default="results/recovery_check")
+    ap.add_argument("--out_dir", required=True,
+                    help="one inversion run: <dir>/{source,recovered}/*.png. The "
+                         "identification pickle is written back into it.")
     ap.add_argument("--clip_aug", action="store_true", help="CLIP eval with crop aug (default: single image, no aug)")
     ap.add_argument("--eval_crops", type=int, default=NUM_CROP_EVAL, help="num crops for CLIP-aug eval")
     ap.add_argument("--evaluators", default=",".join(ALL_EVALUATORS),

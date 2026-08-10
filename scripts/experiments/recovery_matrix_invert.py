@@ -80,8 +80,10 @@ def build_space(opt_space, device, no_crop=False):
             import clip
             name = {"clip_vitb16": "ViT-B/16", "clip_vitb32": "ViT-B/32", "clip_rn50": "RN50"}[opt_space]
             model, preprocess = clip.load(name, jit=False, device=device)
-        enc = lambda x: model.encode_image(x)
         model.eval()
+
+        def enc(x):
+            return model.encode_image(x)
 
         def loss_fn(out, target):
             img = recon_func.convertVQGANoutputIntoCLIPinput(out)
@@ -131,7 +133,8 @@ def build_space(opt_space, device, no_crop=False):
             vgg_t, clip_t = target
             vimg = recon_func.convertVQGANoutputIntoVGGinput(out)
             vf = vgg_feats(vimg)
-            vgg_loss = sum(centered_cos_loss(vf[l], vgg_t[l]) for l in range(len(VGG_LAYER_IDX))) / len(VGG_LAYER_IDX)
+            vgg_loss = sum(centered_cos_loss(vf[i], vgg_t[i])
+                           for i in range(len(VGG_LAYER_IDX))) / len(VGG_LAYER_IDX)
             cimg = recon_func.convertVQGANoutputIntoCLIPinput(out)
             crops = recon_func.createCrops(cimg, NUM_CROP, DEVICE=device)
             clip_loss = centered_cos_loss(cmodel.encode_image(crops).float(), clip_t)
