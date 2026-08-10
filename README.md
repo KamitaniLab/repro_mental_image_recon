@@ -51,7 +51,7 @@ All analyses are organized by **analysis unit** (pipeline), each producing one o
 | # | Analysis Unit | Figures | Requires imagery | Entry Point(s) | Figure Scripts |
 |---|---|---|---|---|---|
 | 1 | Reconstruction generation & representativeness | 2C, A1 | ✅ Yes | `replicate_original_analysis.py original_all` | `Fig2C_assets.py` |
-| 2 | DreamSim distance distribution & pairs | 2D, 2E | ✅ Yes | `recon_distance_distribution.py` | `Fig_best_pairs.py`, `recon_distance_examples.py` |
+| 2 | DreamSim distance distribution & pairs | 2D, 2E | ✅ Yes | `recon_distance_distribution.py --recon_root <run>` | `Fig_best_pairs.py`, `recon_distance_examples.py`, `export_dreamsim_matrices_csv.py` |
 | 3 | Run-to-run variability | 3A | ✅ Yes | `recon_image_koide-majima_methods_multi_times_no_seed.py` | `Fig3A_variability_assets.py` |
 | 4 | Published example comparison | 3B | ✅ Yes | (none — CC BY 4.0 adoption from original paper) | (none) |
 | 5 | Circular evaluation / recovery matrix | 4A, 4B | ❌ No | `recovery_matrix_invert_reps.py` + `recovery_check_eval.py` | `Fig_recon_and_identification_errorbar.py` |
@@ -117,7 +117,7 @@ Each figure in the manuscript can be regenerated from the code. Below are the mi
 
 | Figure | Requirements | Generate analysis | Results location | Generate figure | Output |
 |--------|---|---|---|---|---|
-| **2D, 2E** | Imagery | `uv run python scripts/experiments/recon_distance_distribution.py` | `results/rep_recon_image_koide-majima/comparing_SGD_updated_sampling_parameters/` | `uv run python scripts/create_figure_assets/Fig_best_pairs.py --csv results/.../distance_summary_dreamsim/distances_dreamsim.csv --group S2` | `assets/fig02/` |
+| **2D, 2E** | Imagery | `uv run python scripts/experiments/recon_distance_distribution.py --recon_root <run> --method original_all` | `<run>/original_all/distance_summary/` (`distances_{metric}.csv`, `matrices_{metric}.npz`, distribution plots, `summary_*.txt`) | `uv run python scripts/create_figure_assets/Fig_best_pairs.py --csv <run>/original_all/distance_summary/distances_dreamsim.csv --subject S2` | `assets/fig02/` |
 | **3A** | Imagery | `uv run python scripts/experiments/recon_image_koide-majima_methods_multi_times_no_seed.py` | `results/rep_recon_image_koide-majima_recon_variability_no_seed/` | `uv run python scripts/create_figure_assets/Fig3A_variability_assets.py` | `assets/fig03/` |
 | **3B** | — | (CC BY 4.0 adoption, not regenerable) | — | — | — |
 | **4A, 4B** | (None) | `uv run python scripts/experiments/recovery_matrix_invert_reps.py && uv run python scripts/experiments/recovery_check_eval.py` | `results/recovery_nocrop25_reps/` | `uv run python scripts/create_figure_assets/Fig_recon_and_identification_errorbar.py` | `assets/fig04/` |
@@ -125,6 +125,16 @@ Each figure in the manuscript can be regenerated from the code. Below are the mi
 | **A5** | (None) | `uv run python scripts/experiments/oat_search_SGD_SGLD_sampling_params.py && uv run python scripts/experiments/oat_dreamsim_matrices.py` | `results/oat_sampling_params/` | `uv run python scripts/create_figure_assets/Fig_oat_composite.py` | `assets/figA5/` |
 | **A6** | Imagery | `uv run python scripts/experiments/sgld_effect_summary.py S1 S2 S3` | `results/sgld_effect_summary/` | `uv run python scripts/create_figure_assets/Fig6A_sgld_systematic_assets.py` | `assets/fig06/` |
 | **A7** | (None) | `uv run python scripts/experiments/check_determinism.py --recon && uv run python scripts/experiments/determinism_sweep.py` | `results/determinism_check/`, `results/determinism_sweep/` | `uv run python scripts/create_figure_assets/Fig_determinism_cpu_vs_gpu.py` | `assets/figA7/` |
+
+`<run>` is the reconstruction output root whose `<method>/<subject>/VC/` reconstructions
+are being scored — e.g. `results/rep_recon_image_koide-majima`. Numbers (CSV, `.npz`,
+text summaries) stay under `results/`; only figures are written to `assets/`.
+
+`Fig_best_pairs.py` takes the reconstruction directory from the CSV's own location, so
+the reconstructions it draws are always the ones the distances were computed from. Pass
+`--recon_dir` to override, and `--true_dir` (or `IMAGERY_SOURCE_DIR`) to point at the
+stimuli if they are not in `data/source`. `export_dreamsim_matrices_csv.py` turns
+`matrices_{metric}.npz` into one labelled CSV per subject.
 
 ### Figure A2–A4 note
 

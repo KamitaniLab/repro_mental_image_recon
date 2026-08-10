@@ -17,7 +17,6 @@ import csv
 import glob
 import argparse
 
-import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -65,7 +64,8 @@ def render(rows, title, src_idx, recon_root, method, roi, out, fs=8):
             b = m_bot + (1 - r) * (cell + gap)
             ax = fig.add_axes([left / fw, b / fh, cell / fw, cell / fh])
             ax.imshow(Image.open(img_path).convert("RGB"))
-            ax.set_xticks([]); ax.set_yticks([])
+            ax.set_xticks([])
+            ax.set_yticks([])
             for s in ax.spines.values():
                 s.set_linewidth(0.4)
             if r == 0:

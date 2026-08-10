@@ -1,30 +1,37 @@
 """Paper/report figure: target-reconstruction pairs ordered by perceptual distance —
 the best-recovered images of a run, optionally contrasted with the worst ones.
 
-Reads the per-pair CSV written by distance_distribution_general.py
-(columns: group,true,recon,matched_distance,z_col,ident_col), keeps one group
-(= subject), sorts by matched_distance and draws:
+Reads the per-image CSV written by scripts/experiments/recon_distance_distribution.py
+(columns: subject,stim_id,matched_distance,...,z_col,ident_col), keeps one subject,
+sorts by matched_distance and draws:
 
     row 0 = target (true) image
     row 1 = reconstruction
     columns = the --top smallest-distance pairs, then (if --bottom > 0) a gap and
               the --bottom largest-distance pairs
 
+The CSV identifies a stimulus by its integer id, so the two image paths are derived
+from it: the target from --true_dir (imageryExpStim{id}_*.tiff) and the reconstruction
+from --recon_dir (recon_img_normalized-Img{id:04d}.jpg). --recon_dir defaults to the
+run the CSV came out of, which is its parent-of-parent directory.
+
 --top <= 0 takes every pair; --per_row N wraps them into stacked target/recon blocks.
 
 Run:
   # 5 best vs 3 worst side by side
   uv run python scripts/create_figure_assets/Fig_best_pairs.py \
-      --csv results/rep_recon_image_koide-majima_comparing_SGD_updated_sampling_parameters/original_all/distance_summary_dreamsim/distances_dreamsim.csv \
-      --group S2 --top 5 --bottom 3 --width_mm 170
+      --csv results/<run>/original_all/distance_summary/distances_dreamsim.csv \
+      --subject S2 --top 5 --bottom 3 --width_mm 170
 
   # all 25 pairs, 5 per row, ranked best -> worst
   uv run python scripts/create_figure_assets/Fig_best_pairs.py \
-      --csv .../distance_summary_dreamsim/distances_dreamsim.csv \
-      --group S2 --top 0 --per_row 5 --width_mm 170
+      --csv results/<run>/original_all/distance_summary/distances_dreamsim.csv \
+      --subject S2 --top 0 --per_row 5 --width_mm 170
 """
 import os
+import re
 import csv as csvmod
+import glob
 import argparse
 
 import matplotlib
@@ -32,32 +39,66 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from PIL import Image
 
+from figure_asset_utils import ensure_directory, project_root, resolve_data_dir
+
 MM = 1.0 / 25.4  # mm -> inch
 
+# Stimuli 1-15 are the geometric shapes, 17-26 the natural images (16 is the
+# fixation cross, which is never a reconstruction target).
+NATURAL_MIN_ID = 17
 
-def is_natural(name):
-    """True for the natural-image stimuli (Stim16..Stim25), whose 2nd token is an ImageNet id."""
-    parts = os.path.splitext(name)[0].split("_")
-    return len(parts) > 1 and parts[1].startswith("n") and parts[1][1:].isdigit()
+
+def is_natural(stim_id):
+    return stim_id >= NATURAL_MIN_ID
 
 
 def short_label(name):
-    """Stim22_n02882301_14188.tiff -> 'Stim22'; Stim09_blue_X.tiff -> 'Stim09\\nblue_X'.
+    """imageryExpStim22_inat_airliner.tiff -> 'Stim22\\nairliner'.
 
     The descriptive part goes on its own line so long geometric names
-    (green_smallring) do not run into the neighbouring column.
+    (green_smallring) do not run into the neighbouring column. The anat/inat
+    prefix carries no information for the reader and is dropped.
     """
-    stem = os.path.splitext(name)[0]
-    parts = stem.split("_")
-    if len(parts) > 1 and parts[1].startswith("n") and parts[1][1:].isdigit():
-        return parts[0]                      # natural image: ImageNet id is noise
-    return parts[0] + "\n" + "_".join(parts[1:]) if len(parts) > 1 else stem
+    parts = os.path.splitext(name)[0].split("_")
+    number = parts[0].replace("imageryExpStim", "Stim")
+    rest = [p for p in parts[1:] if p not in ("anat", "inat")]
+    return number + "\n" + "_".join(rest) if rest else number
+
+
+def load_source_index(source_dir):
+    """stim id -> target image path, matching recon_distance_distribution.py."""
+    out = {}
+    for path in glob.glob(os.path.join(source_dir, "*.tiff")):
+        m = re.search(r"imageryExpStim(\d+)", os.path.basename(path))
+        if m:
+            out[int(m.group(1))] = path
+    return out
+
+
+def read_csv(path, subject):
+    """Rows for one subject, as {stim_id, matched_distance, z_col, ident_col}."""
+    with open(path) as f:
+        reader = csvmod.DictReader(f)
+        cols = reader.fieldnames or []
+        required = {"subject", "stim_id", "matched_distance"}
+        if not required.issubset(cols):
+            raise SystemExit(
+                f"[error] {path} has columns {cols}; expected at least {sorted(required)}. "
+                "Regenerate it with scripts/experiments/recon_distance_distribution.py."
+            )
+        return [{"stim_id": int(r["stim_id"]),
+                 "matched_distance": float(r["matched_distance"]),
+                 "z_col": float(r.get("z_col", "nan")),
+                 "ident_col": float(r.get("ident_col", "nan"))}
+                for r in reader if subject is None or r["subject"] == subject]
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--csv", required=True, help="per-pair CSV (group,true,recon,matched_distance,...)")
-    ap.add_argument("--group", default=None, help="group/subject to plot (default: all rows)")
+    ap.add_argument("--csv", required=True,
+                    help="per-image CSV from recon_distance_distribution.py "
+                         "(subject,stim_id,matched_distance,...)")
+    ap.add_argument("--subject", default=None, help="subject to plot (default: all rows)")
     ap.add_argument("--top", type=int, default=4,
                     help="number of smallest-distance pairs (<=0 or 'all' -> every pair)")
     ap.add_argument("--bottom", type=int, default=0,
@@ -65,43 +106,53 @@ def main():
     ap.add_argument("--per_row", type=int, default=0,
                     help="wrap into blocks of this many pairs (0 = one single row of pairs)")
     ap.add_argument("--subset", default="all", choices=["all", "natural", "geometric"],
-                    help="restrict ranking to natural (Stim16-25) or geometric (Stim01-15) stimuli")
-    ap.add_argument("--true_dir", default="data/ImageryDeeprecon/source")
-    ap.add_argument("--recon_dir",
-                    default=("results/rep_recon_image_koide-majima_comparing_SGD_updated_sampling_parameters"
-                             "/original_all/{group}/VC"),
-                    help="recon image dir; '{group}' is substituted with --group")
+                    help="restrict ranking to natural (Stim17-26) or geometric (Stim01-15) stimuli")
+    ap.add_argument("--true_dir", default=None,
+                    help="target stimulus dir (default: data/source, or $IMAGERY_SOURCE_DIR)")
+    ap.add_argument("--recon_dir", default=None,
+                    help="recon image dir; '{subject}' is substituted with --subject. "
+                         "Default: the run the CSV came from, i.e. <csv>/../../{subject}/VC")
     ap.add_argument("--metric_label", default=None, help="distance name shown in titles (default: from CSV name)")
     ap.add_argument("--width_mm", type=float, default=210.0, help="figure width in mm (210 = A4 width)")
     ap.add_argument("--font_pt", type=float, default=8.0,
                     help="smallest text size in the figure (column titles / row labels)")
-    ap.add_argument("--out", default=None, help="output path without extension (default: next to CSV)")
+    ap.add_argument("--out", default=None,
+                    help="output path without extension (default: under assets/fig02/)")
     args = ap.parse_args()
 
     metric = args.metric_label or os.path.splitext(os.path.basename(args.csv))[0].replace("distances_", "")
 
-    with open(args.csv) as f:
-        rows = [r for r in csvmod.DictReader(f)
-                if args.group is None or r["group"] == args.group]
+    src_idx = load_source_index(str(args.true_dir or resolve_data_dir()))
+    rows = read_csv(args.csv, args.subject)
     if not rows:
-        raise SystemExit(f"[error] no rows for group={args.group} in {args.csv}")
+        raise SystemExit(f"[error] no rows for subject={args.subject} in {args.csv}")
+    missing = sorted({r["stim_id"] for r in rows} - set(src_idx))
+    if missing:
+        raise SystemExit(f"[error] no target image for stimulus ids {missing} "
+                         f"in {args.true_dir or resolve_data_dir()}")
     if args.subset != "all":
         want = args.subset == "natural"
-        rows = [r for r in rows if is_natural(r["true"]) == want]
+        rows = [r for r in rows if is_natural(r["stim_id"]) == want]
         if not rows:
             raise SystemExit(f"[error] no {args.subset} stimuli in {args.csv}")
-    rows.sort(key=lambda r: float(r["matched_distance"]))
+    rows.sort(key=lambda r: r["matched_distance"])
     n_top = len(rows) if args.top <= 0 else args.top
     best = rows[:n_top]
     worst = rows[len(rows) - args.bottom:] if args.bottom > 0 else []
     if len(best) + len(worst) > len(rows):
         raise SystemExit(f"[error] --top {n_top} + --bottom {args.bottom} exceeds {len(rows)} pairs")
-    print(f"[info] {args.group or 'all'}: best-{len(best)}"
+    print(f"[info] {args.subject or 'all'}: best-{len(best)}"
           + (f" / worst-{len(worst)}" if worst else "") + f" by {metric}")
     for r in best + worst:
-        print(f"  {r['true']:40s} <- {r['recon']:35s} d={float(r['matched_distance']):.4f}")
+        name = os.path.basename(src_idx[r["stim_id"]])
+        print(f"  {name:40s} <- Img{r['stim_id']:04d}  d={r['matched_distance']:.4f}")
 
-    recon_dir = args.recon_dir.format(group=args.group or "")
+    # The CSV lives in <run>/<method>/distance_summary/, so the reconstructions it
+    # describes are two levels up -- derive the directory instead of duplicating the
+    # run name here, where it would go stale the moment the run is renamed.
+    recon_dir_tmpl = args.recon_dir or os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(args.csv))), "{subject}", "VC")
+    recon_dir = recon_dir_tmpl.format(subject=args.subject or "")
 
     # column stream: pair dicts, "gap" = spacer between the best/worst blocks, None = empty slot
     items = best + (["gap"] + worst if worst else [])
@@ -134,18 +185,22 @@ def main():
                 continue
             x = label_w + sum(ratios[:j]) * cell
             w = ratios[j] * cell - pad
-            imgs = [os.path.join(args.true_dir, r["true"]), os.path.join(recon_dir, r["recon"])]
-            for row_i, p in enumerate(imgs):
+            source_path = src_idx[r["stim_id"]]
+            recon_path = os.path.join(
+                recon_dir, f"recon_img_normalized-Img{r['stim_id']:04d}.jpg")
+            for row_i, p in enumerate((source_path, recon_path)):
                 y = y_top + row_i * cell
                 ax = fig.add_axes([x / fig_w, 1.0 - (y + cell - pad) / fig_h,
                                    w / fig_w, (cell - pad) / fig_h])
                 axes[(k, j, row_i)] = ax
                 ax.imshow(Image.open(p).convert("RGB"))
-                ax.set_xticks([]); ax.set_yticks([])
+                ax.set_xticks([])
+                ax.set_yticks([])
                 for s in ax.spines.values():
                     s.set_linewidth(0.4)
                 if row_i == 0:
-                    ax.set_title(f"{short_label(r['true'])}\nd={float(r['matched_distance']):.3f}",
+                    col_label = short_label(os.path.basename(source_path))
+                    ax.set_title(f"{col_label}\nd={r['matched_distance']:.3f}",
                                  fontsize=FS, linespacing=1.15, pad=2)
                 if j == 0:
                     ax.set_ylabel("Target" if row_i == 0 else "Reconstruction",
@@ -153,7 +208,7 @@ def main():
 
     scope = {"all": "images", "natural": "natural images", "geometric": "geometric images"}[args.subset]
     fig.text(label_w / fig_w, 1.0 - 0.03 / fig_h,
-             f"{args.group or 'all subjects'}  |  {metric}  |  {len(rows)} {scope}, ranked by distance",
+             f"{args.subject or 'all subjects'}  |  {metric}  |  {len(rows)} {scope}, ranked by distance",
              fontsize=FS_HEAD, ha="left", va="top")
 
     if cap_h:  # captions over the best / worst blocks (single-row layout only)
@@ -166,8 +221,9 @@ def main():
 
     tag = ("all" if args.top <= 0 else f"top{len(best)}") + (f"_bottom{len(worst)}" if worst else "")
     sub = "" if args.subset == "all" else f"_{args.subset}"
-    out = args.out or os.path.join(os.path.dirname(args.csv),
-                                   f"best_pairs_{metric}_{args.group or 'all'}{sub}_{tag}")
+    # Figures belong in assets/; the numbers they are drawn from stay in results/.
+    out = args.out or str(ensure_directory(project_root() / "assets" / "fig02")
+                          / f"best_pairs_{metric}_{args.subject or 'all'}{sub}_{tag}")
     for ext in ("pdf", "png"):
         fig.savefig(f"{out}.{ext}", dpi=300)
     print(f"saved: {out}.pdf / .png  ({fig_w/MM:.0f}x{fig_h/MM:.0f} mm)")

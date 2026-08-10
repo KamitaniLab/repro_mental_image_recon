@@ -140,10 +140,12 @@ def main():
         matched_all, mismatched_all = [], []
         per_subject = {}
         per_subject_raw = {}  # subj -> (matched_arr, mismatched_arr)
+        matrices = {}         # subj -> full distance matrix (saved as .npz below)
         rows = []  # per-image stats (see header below)
         for subj in subjects:
             ids, recs, srcs = data[subj]
             M = distance_matrix(dist_fn, recs, srcs)   # M[i,j] = dist(recon_i, source_j)
+            matrices[subj] = M
             diag = np.diag(M)
             off = M[~np.eye(len(ids), dtype=bool)]
             matched_all.extend(diag.tolist())
@@ -171,6 +173,11 @@ def main():
             for r in rows:
                 f.write(f"{r[0]},{r[1]},{r[2]:.6f},{r[3]:.6f},{r[4]:.6f},{r[5]:.6f},"
                         f"{r[6]:.6f},{r[7]:.6f},{r[8]:.6f},{r[9]:.6f}\n")
+        # Full matrices alongside the CSV: the CSV keeps only the per-image summaries,
+        # so anything needing the off-diagonal structure (e.g.
+        # scripts/experiments/export_dreamsim_matrices_csv.py) reads these instead of
+        # recomputing the distances. Row order matches the CSV rows for that subject.
+        np.savez(os.path.join(out_dir, f"matrices_{metric}.npz"), **matrices)
         print(f"  [{metric}] matched={overall['matched_mean']:.4f}±{overall['matched_std']:.4f} "
               f"mismatched={overall['mismatched_mean']:.4f}±{overall['mismatched_std']:.4f} "
               f"AUC(id)={overall['auc_identification']:.3f} p={overall['mannwhitney_p']:.2e}")
@@ -302,14 +309,18 @@ def main():
             base = gi * 3.0
             # null (left) then matched (right)
             for off, arr, col in ((0.0, mm, C_N), (1.0, m, C_M)):
-                positions.append(base + off); data_box.append(arr); colors.append(col)
+                positions.append(base + off)
+                data_box.append(arr)
+                colors.append(col)
             centers.append(base + 0.5)
             xticklab.append(f"{g}\nAUC={au:.2f}")
         bp = ax.boxplot(data_box, positions=positions, widths=0.8, patch_artist=True,
                         showfliers=False, medianprops=dict(color="black", lw=1.2),
                         whiskerprops=dict(color="0.3"), capprops=dict(color="0.3"))
         for patch, col in zip(bp["boxes"], colors):
-            patch.set_facecolor(col); patch.set_alpha(0.55); patch.set_edgecolor("0.2")
+            patch.set_facecolor(col)
+            patch.set_alpha(0.55)
+            patch.set_edgecolor("0.2")
         # overlay matched points (jittered) since matched n is small
         rng = np.random.default_rng(0)
         for pos, arr, col in zip(positions, data_box, colors):
@@ -317,7 +328,8 @@ def main():
                 jit = (rng.random(len(arr)) - 0.5) * 0.45
                 ax.scatter(pos + jit, arr, s=7, color=col, edgecolor="white",
                            linewidth=0.2, zorder=3, alpha=0.9)
-        ax.set_xticks(centers); ax.set_xticklabels(xticklab, fontsize=8)
+        ax.set_xticks(centers)
+        ax.set_xticklabels(xticklab, fontsize=8)
         ov = results[metric]["overall"]
         ax.set_title(f"{metric}  (overall p={ov['mannwhitney_p']:.1e})", fontsize=10)
         ax.set_ylabel(f"{metric} distance (lower = more similar)", fontsize=9)
