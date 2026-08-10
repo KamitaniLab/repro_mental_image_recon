@@ -4,7 +4,7 @@
 # For each rep (a different --seed) and each of the 4 opt_spaces used in the figure,
 # it runs recovery_matrix_invert_reps.py then recovery_check_eval.py. Results land in
 #   <OUT_ROOT>/rep<NN>/<opt_space>/{source,recovered,recovery_check_identification.pkl}
-# which Fig_recon_and_identification_errorbar.py aggregates.
+# which Fig4_recon_and_identification_errorbar.py aggregates.
 #
 # Usage:
 #   bash scripts/experiments/run_recovery_reps.sh              # all reps 0..N_REPS-1
@@ -51,5 +51,5 @@ done
 # bars actually summarise. Naming an unrelated single run there is what the figure
 # script warns against.
 echo "[run] DONE reps=${REPS[*]}. Make the figure with:"
-echo "  uv run python scripts/create_figure_assets/Fig_recon_and_identification_errorbar.py \\"
+echo "  uv run python scripts/create_figure_assets/Fig4_recon_and_identification_errorbar.py \\"
 echo "      --reps_root $OUT_ROOT --err sd"

@@ -11,7 +11,7 @@ B/C/D reuse the per-condition DreamSim matrices from
 coloured by behaviour cluster). A pulls the final reconstructions straight from the
 sweep's output tree.
 
-    python scripts/create_figure_assets/Fig_oat_composite.py
+    python scripts/create_figure_assets/FigA5_oat_composite.py
 """
 from __future__ import annotations
 

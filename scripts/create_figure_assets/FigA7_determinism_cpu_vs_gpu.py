@@ -15,8 +15,8 @@ with --device cpu, once on GPU) for the image grid, and by
 scripts/experiments/determinism_sweep.py for the distribution.
 
 Usage:
-    python scripts/create_figure_assets/Fig_determinism_cpu_vs_gpu.py
-    python scripts/create_figure_assets/Fig_determinism_cpu_vs_gpu.py --stage sgd
+    python scripts/create_figure_assets/FigA7_determinism_cpu_vs_gpu.py
+    python scripts/create_figure_assets/FigA7_determinism_cpu_vs_gpu.py --stage sgd
 """
 import argparse
 import os

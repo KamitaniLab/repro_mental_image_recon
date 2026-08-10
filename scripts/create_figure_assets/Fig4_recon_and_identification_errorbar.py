@@ -1,6 +1,6 @@
-"""Error-bar variant of Fig_recon_and_identification.
+"""Figure 4: feature-matched images (A) and pairwise identification accuracy (B).
 
-Identical layout, but the right-hand identification bars show the MEAN over several
+The right-hand identification bars show the MEAN over several
 independent repetition runs with error bars (run-to-run SD or SEM). Each rep is a
 full re-inversion with a different seed (recovery_matrix_invert_reps.py) followed by
 recovery_check_eval.py; this script aggregates their recovery_check_identification.pkl.
@@ -15,7 +15,7 @@ Directory layout expected under --reps_root:
     <reps_root>/rep*/<opt_space>/recovery_check_identification.pkl
 
 Run:
-  uv run python scripts/create_figure_assets/Fig_recon_and_identification_errorbar.py \
+  uv run python scripts/create_figure_assets/Fig4_recon_and_identification_errorbar.py \
       --reps_root results/recovery_from_rand_images --err sd
 """
 import os

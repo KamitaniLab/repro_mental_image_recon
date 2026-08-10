@@ -4,7 +4,7 @@ Same procedure as recovery_matrix_invert.py, but the random RGB-noise sources AN
 the SGLD noise are driven by --seed, so varying the seed gives INDEPENDENT reps.
 Run it ~10 times with different seeds (one process per (opt_space, seed)); each rep
 writes its own source/recovered dir, then evaluate each with recovery_check_eval.py
-and aggregate with Fig_recon_and_identification_errorbar.py.
+and aggregate with Fig4_recon_and_identification_errorbar.py.
 
 The original recovery_matrix_invert.py is imported and left untouched -- this only
 reuses its build_space()/invert_one() and constants.

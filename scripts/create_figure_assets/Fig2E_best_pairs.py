@@ -19,12 +19,12 @@ run the CSV came out of, which is its parent-of-parent directory.
 
 Run:
   # 5 best vs 3 worst side by side
-  uv run python scripts/create_figure_assets/Fig_best_pairs.py \
+  uv run python scripts/create_figure_assets/Fig2E_best_pairs.py \
       --csv results/<run>/original_all/distance_summary/distances_dreamsim.csv \
       --subject S2 --top 5 --bottom 3 --width_mm 170
 
   # all 25 pairs, 5 per row, ranked best -> worst
-  uv run python scripts/create_figure_assets/Fig_best_pairs.py \
+  uv run python scripts/create_figure_assets/Fig2E_best_pairs.py \
       --csv results/<run>/original_all/distance_summary/distances_dreamsim.csv \
       --subject S2 --top 0 --per_row 5 --width_mm 170
 """
