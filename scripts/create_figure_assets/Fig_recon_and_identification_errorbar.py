@@ -16,8 +16,8 @@ Directory layout expected under --reps_root:
 
 Run:
   uv run python scripts/create_figure_assets/Fig_recon_and_identification_errorbar.py \
-      --reps_root results/recovery_nocrop25_reps --err sd \
-      --out results/recovery_nocrop25_reps/fig_recon_and_identification_errorbar
+      --reps_root results/recovery_from_rand_images --err sd \
+      --out results/recovery_from_rand_images/fig_recon_and_identification_errorbar
 """
 import os
 import glob
@@ -63,7 +63,7 @@ def main():
                     help="error-bar statistic across reps: sd = run-to-run spread, sem = sd/sqrt(n_reps)")
     ap.add_argument("--n_cols", type=int, default=4)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--out", default="results/recovery_nocrop25_reps/fig_recon_and_identification_errorbar")
+    ap.add_argument("--out", default="results/recovery_from_rand_images/fig_recon_and_identification_errorbar")
     ap.add_argument("--width_mm", type=float, default=190.0, help="total figure width (A4=210, with margins=190)")
     ap.add_argument("--fontsize", type=float, default=10.0)
     ap.add_argument("--bar_ratio", type=float, default=3.3, help="bar panel width / image cell")
