@@ -33,21 +33,17 @@ Usage (from the repo root):
 import argparse
 import csv
 import os
-import sys
 import time
 
 import numpy as np
 import torch
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
-import recon_func_reproducible as R  # noqa: E402
+from repro_mental_image_recon.recon import func_reproducible as R
 
 OUT_DIR = os.path.join('results', 'determinism_sweep')
 
 
 def load_models(dt_cfg, dev):
-    sys.path.insert(0, dt_cfg['file_path']['taming_transformer_dir'])
     import model_loading
     tt = dt_cfg['file_path']['taming_transformer_dir']
     print('loading VQGAN / VGG19 / CLIP ...', flush=True)

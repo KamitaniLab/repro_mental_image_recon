@@ -39,7 +39,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from PIL import Image
 
-from figure_asset_utils import ensure_directory, project_root, resolve_data_dir
+from repro_mental_image_recon.figures.assets import ensure_directory, project_root, resolve_data_dir
 
 MM = 1.0 / 25.4  # mm -> inch
 

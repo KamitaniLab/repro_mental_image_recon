@@ -26,20 +26,22 @@ figure script can recompute any summary without touching the images again.
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
 import numpy as np
 import torch
 from PIL import Image
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
 # SOURCE_IMAGE_NAMES is the canonical target-index -> stimulus-file mapping (its
 # ordering is what makes index i line up with the reconstructions; see its
 # definition). Import it rather than restating it, so the two cannot drift.
-sys.path.insert(0, str(PROJECT_ROOT / "scripts" / "create_figure_assets"))
-from figure_asset_utils import SOURCE_IMAGE_NAMES, resolve_data_dir  # noqa: E402
+from repro_mental_image_recon.figures.assets import (
+    SOURCE_IMAGE_NAMES,
+    project_root,
+    resolve_data_dir,
+)
+
+PROJECT_ROOT = project_root()
 
 DEFAULT_ROOT = PROJECT_ROOT / "results" / "oat_sampling_params"
 SUBJECTS = ("S1", "S2", "S3")

@@ -38,9 +38,7 @@ import sys
 import numpy as np
 import torch
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
-import recon_func_reproducible as R  # noqa: E402
+from repro_mental_image_recon.recon import func_reproducible as R
 
 DEFAULT_OUT_DIR = os.path.join('results', 'determinism_check')
 
@@ -108,7 +106,6 @@ def build_recon(args, dev):
         dt_cfg = yaml.safe_load(f)
 
     R.set_seed(args.seed)
-    sys.path.insert(0, dt_cfg['file_path']['taming_transformer_dir'])
     import model_loading
 
     print('  loading VQGAN / VGG19 / CLIP ...', flush=True)
@@ -316,8 +313,9 @@ def drive(args):
     for k, v in results.items():
         print(f'  {k:<9} {"reproducible" if v else "NOT bit-identical"}')
     if results.get('forward') and not results.get('backward', True):
-        print('\n  読み: 乱数は generator に閉じている（forward が完全一致）。')
-        print('        ずれは backward の非決定性で、CPU では消えるはず。')
+        print('\n  Reading: the sampling is contained in the generator (forward is exact).')
+        print('           The divergence is backward non-determinism, and should')
+        print('           disappear on CPU.')
     return 0 if all(results.values()) else 1
 
 

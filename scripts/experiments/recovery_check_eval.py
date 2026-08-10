@@ -13,7 +13,6 @@ identification reflects CLIP feature-matching (optimization-evaluation coupling)
 not perceptual reconstruction -- no human ground truth needed.
 """
 import os
-import sys
 import glob
 import argparse
 import pickle
@@ -23,15 +22,8 @@ import torch
 from PIL import Image
 from torchvision import transforms
 import torchvision
-import yaml
 
-# Load config for mental_img_recon path
-with open("./scripts/config/config_recon.yaml", "rb") as f:
-    dt_cfg = yaml.safe_load(f)
-mental_img_recon_dir = dt_cfg["file_path"]["mental_img_recon_dir"]
-sys.path.append(mental_img_recon_dir)
-
-import recon_func  # noqa: E402  (createCrops)
+import recon_func  # createCrops
 
 SEED = 42
 torch.manual_seed(SEED)

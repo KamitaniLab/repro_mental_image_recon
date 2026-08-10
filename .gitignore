@@ -1,13 +1,15 @@
-# Generated outputs (regenerate via scripts/experiments/)
-results/
-results_backup*/
-figures/
-assets/
-assets_ipynb/
+# Generated outputs (regenerate via scripts/experiments/). Anchored with a
+# leading "/" so they only match at the repository root -- an unanchored
+# "figures/" would also swallow src/repro_mental_image_recon/figures/.
+/results/
+/results_backup*/
+/figures/
+/assets/
+/assets_ipynb/
 
 # Downloaded data and models
-data/
-models/
+/data/
+/models/
 *.zip
 *.tar.gz
 
@@ -39,11 +41,12 @@ matrices_lpips.npz
 summary_deeprecon_TH_VC.txt
 results_variability_gap*.log
 
-# Local development clones (submodules in lib/ are authoritative)
-mental_img_recon/
-external/
-taming/
-repro_koide_majima/
+# Local development clones at the repository root (lib/ holds the submodules,
+# which are authoritative and must stay tracked)
+/mental_img_recon/
+/external/
+/taming/
+/repro_koide_majima/
 
 # Exploratory, not part of the published analysis
 scripts/experiments/layout.py

@@ -24,8 +24,8 @@ from typing import Sequence
 
 from PIL import Image
 
-from fig_utils import GroupImageDrawer
-from figure_asset_utils import (
+from repro_mental_image_recon.figures.drawing import GroupImageDrawer
+from repro_mental_image_recon.figures.assets import (
     SOURCE_IMAGE_NAMES,
     SUBJECTS,
     ensure_directory,

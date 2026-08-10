@@ -11,9 +11,9 @@ from typing import Sequence
 
 import numpy as np
 
-from fig_utils import GroupImageDrawer
+from repro_mental_image_recon.figures.drawing import GroupImageDrawer
 
-from figure_asset_utils import (
+from repro_mental_image_recon.figures.assets import (
     ensure_directory,
     load_recon_images,
     load_target_images,

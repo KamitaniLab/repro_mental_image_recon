@@ -1,8 +1,7 @@
-"""Common helpers for generating figure assets from reconstruction notebooks.
+"""Path resolution and image loading shared by the figure scripts.
 
-These utilities centralize path resolution and data loading logic that was
-previously duplicated across several notebooks. The goal is to make the
-refactored scripts concise and easier to maintain for publication.
+These utilities centralize logic that was previously duplicated across several
+notebooks, so the scripts under ``scripts/create_figure_assets/`` stay short.
 """
 
 from __future__ import annotations
@@ -61,10 +60,19 @@ _PROJECT_ROOT: Path | None = None
 
 
 def project_root() -> Path:
-    """Return the repository root inferred from this file location."""
+    """Return the repository root: the nearest ancestor holding ``pyproject.toml``.
+
+    The package is installed editable from ``<root>/src``, so walking up from this
+    file finds the checkout. If it is ever installed somewhere outside the
+    repository the walk finds nothing, and the working directory is used instead --
+    the README requires every command to be run from the repository root anyway.
+    """
     global _PROJECT_ROOT
     if _PROJECT_ROOT is None:
-        _PROJECT_ROOT = Path(__file__).resolve().parents[2]
+        _PROJECT_ROOT = next(
+            (p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").exists()),
+            Path.cwd(),
+        )
     return _PROJECT_ROOT
 
 

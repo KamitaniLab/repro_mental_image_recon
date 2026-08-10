@@ -1,5 +1,4 @@
 # %%
-import sys
 import argparse
 import yaml
 from PIL import Image
@@ -10,7 +9,7 @@ import scipy
 import os
 
 from recon_utils import get_target_label, convert_featname
-import recon_func_mod as recon_func
+from repro_mental_image_recon.recon import func_mod as recon_func
 
 RESULT_ROOT = "./results/rep_recon_image_koide-majima_recon_variability_no_seed"
 
@@ -35,7 +34,6 @@ def main(
         dt_cfg = yaml.safe_load(f)
 
     dir_taming_transformer = dt_cfg["file_path"]["taming_transformer_dir"]
-    sys.path.insert(0, dir_taming_transformer)
     import model_loading
 
     # Device

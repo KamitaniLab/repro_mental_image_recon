@@ -182,7 +182,3 @@ recon_params:
 
         numReps_withoutLangevin: 1500
         numReps_withLangevin: 0
-            
-
-        numReps_withoutLangevin: 1000
-        numReps_withLangevin: 500

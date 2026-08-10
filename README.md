@@ -236,7 +236,8 @@ lr_a × T plane on their own, in more detail than the composite has room for.
 ### Analysis 8 — CPU/GPU determinism analysis (Fig A7)
 
 The upstream reconstruction seeds none of its random operations, so no two runs agree. This
-analysis runs on `recon_func_reproducible.py`, a seeded variant of those functions, which is
+analysis runs on `repro_mental_image_recon.recon.func_reproducible`, a seeded variant of
+those functions, which is
 what makes the question answerable: once the sampling is pinned, whatever difference remains
 is arithmetic.
 

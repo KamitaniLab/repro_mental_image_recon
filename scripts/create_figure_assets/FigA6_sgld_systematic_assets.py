@@ -24,7 +24,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from figure_asset_utils import SUBJECTS, ensure_directory, project_root
+from repro_mental_image_recon.figures.assets import SUBJECTS, ensure_directory, project_root
 
 PROJECT_ROOT = project_root()
 DEFAULT_SUMMARY_DIR = PROJECT_ROOT / "results" / "sgld_effect_summary"

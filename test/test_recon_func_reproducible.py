@@ -1,24 +1,17 @@
-"""Reproducibility tests for scripts/experiments/recon_func_reproducible.py.
+"""Reproducibility tests for repro_mental_image_recon.recon.func_reproducible.
 
-These run on CPU (no GPU/model/data needed): recon_func_reproducible only imports
+These run on CPU (no GPU/model/data needed): the module only imports
 torch/torchvision/numpy/PIL/matplotlib. CUDA-specific checks are gated by
 ``torch.cuda.is_available()``.
 
 Run: ``uv run pytest test/ -v``
 """
 
-import os
-import sys
-
 import numpy as np
 import pytest
 import torch
 
-# recon_func_reproducible lives under scripts/experiments
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(REPO_ROOT, "scripts", "experiments"))
-
-import recon_func_reproducible as R  # noqa: E402
+from repro_mental_image_recon.recon import func_reproducible as R
 
 
 def _dummy_img(size=64, device="cpu"):

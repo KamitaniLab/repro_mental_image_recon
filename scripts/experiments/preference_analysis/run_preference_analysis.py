@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import argparse
 import pickle
-import sys
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping
 
@@ -21,13 +20,16 @@ from bdpy.recon.torch.modules import build_encoder
 from bdpy.recon.torch.modules.critic import LayerWiseAverageCritic, MSE
 from bdpy.recon.torch.modules.encoder import SimpleEncoder
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-
 # SOURCE_IMAGE_NAMES is the canonical target-index -> stimulus-file mapping; import it
 # rather than restating it here. The stimuli themselves come from data/source, the same
 # images the figures show, instead of the downsampled copies in the label YAML.
-sys.path.insert(0, str(REPO_ROOT / "scripts" / "create_figure_assets"))
-from figure_asset_utils import SOURCE_IMAGE_NAMES, resolve_data_dir  # noqa: E402
+from repro_mental_image_recon.figures.assets import (
+    SOURCE_IMAGE_NAMES,
+    project_root,
+    resolve_data_dir,
+)
+
+REPO_ROOT = project_root()
 
 COMPARISON_CONFIGS = {
     "cand2": {

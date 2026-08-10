@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 
-from figure_asset_utils import (
+from repro_mental_image_recon.figures.assets import (
     ensure_directory,
     project_root,
 )

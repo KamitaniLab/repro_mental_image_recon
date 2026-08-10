@@ -14,33 +14,25 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 
-from fig_utils import GroupImageDrawer
-from figure_asset_utils import (
-    SOURCE_IMAGE_NAMES,
+from repro_mental_image_recon.figures.assets import (
     ensure_directory,
     load_recon_images,
     load_target_images,
     project_root,
 )
+from repro_mental_image_recon.figures.drawing import GroupImageDrawer
+from repro_mental_image_recon.figures.stimuli import SUBJECT_ID, select_random_stimuli
 
 PROJECT_ROOT = project_root()
 RECON_ROOT = PROJECT_ROOT / "results" / "rep_recon_image_koide-majima"
 OUTPUT_DIR = PROJECT_ROOT / "assets" / "fig05"
 
-SUBJECT_ID = "S1"
 COMPARISON_CONDITIONS = {
     "Koide-Majima": "original_all",
     "w/o Baye": "AdamOnly_all",
     "w/o CLIP": "VGGonly_all",
     "w/o Baye and CLIP": "wo_SGLD_CLIP_all",
 }
-# Panel B draws RANDOM_COUNT stimuli from the full set of 25, as the caption states.
-# The pool must stay larger than the count: drawing n of n is a permutation, and the
-# result is sorted, so the seed would have no effect on which stimuli appear.
-RANDOM_POOL = SOURCE_IMAGE_NAMES
-
-RANDOM_COUNT = 5
-RANDOM_SEED = 42
 
 PREFERENCE_MODELS = ("dreamsim", "alexnet", "RN50", "lpips")
 PREFERENCE_PREFIX_FOUR = "ref_compare_4"
@@ -84,14 +76,8 @@ def _recon_dir(recon_root: Path, condition_key: str) -> Path:
     return recon_root / condition_key / SUBJECT_ID / "VC"
 
 
-def _select_random_stimuli() -> tuple[str, ...]:
-    rng = np.random.default_rng(RANDOM_SEED)
-    selection = rng.choice(RANDOM_POOL, size=RANDOM_COUNT, replace=False)
-    return tuple(sorted(selection))
-
-
 def export_random_comparison_panel(recon_root: Path, output_dir: Path) -> None:
-    image_names = _select_random_stimuli()
+    image_names = select_random_stimuli()
     target_images = load_target_images(image_names)
     conditions = [{"title": "Target", "images": target_images}]
 

@@ -1,10 +1,9 @@
 """Seed-reproducible counterpart of recon_image_koide-majima_methods_multi_times_no_seed.py.
 
-The ``_no_seed`` script is left untouched: it uses the original ``recon_func``
-and its results vary run to run (that is the point of the variability
-experiment). This script is the reproducible one -- it always uses
-``recon_func_reproducible``, so the same ``--seed`` gives the same
-reconstruction.
+The ``_no_seed`` script is left untouched: it uses ``recon.func_mod``, whose
+results vary run to run (that is the point of the variability experiment). This
+script is the reproducible one -- it always uses ``recon.func_reproducible``, so
+the same ``--seed`` gives the same reconstruction.
 
 Example:
     python scripts/experiments/recon_image_koide-majima_methods_multi_times_reproducible.py \\
@@ -12,7 +11,6 @@ Example:
 """
 
 # %%
-import sys
 import argparse
 import hashlib
 import yaml
@@ -23,8 +21,8 @@ import pickle
 import scipy
 import os
 
-from recon_utils  import get_target_label, convert_featname
-import recon_func_reproducible as recon_func
+from recon_utils import get_target_label, convert_featname
+from repro_mental_image_recon.recon import func_reproducible as recon_func
 
 
 def derive_seed(base_seed, subject, targetID, iter_n):
@@ -57,8 +55,7 @@ def main(reconMethod='original_all', save_base_dir = './test', seed=None,
           'from subject/target/iteration)')
 
     dir_taming_transformer = dt_cfg['file_path']['taming_transformer_dir']
-    sys.path.insert(0, dir_taming_transformer)
-    import model_loading  
+    import model_loading
 
     # Device
     cudaID = "cuda:0"

@@ -43,6 +43,13 @@ dependencies = [
     "pyarrow>=18,<21",
 ]
 
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.uv.sources]
 taming-transformers = { path = "lib/taming-transformers" }
 # editable: the source is a submodule, so the installed code must follow whatever

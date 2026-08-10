@@ -116,7 +116,7 @@ class GroupImageDrawer:
                     image_obj = self._expand_to_square(image_obj)
                 image_obj = image_obj.resize(self.image_size, Image.LANCZOS)
 
-                # 画像位置の計算
+                # Where this image goes in the grid
                 row_index, column_index, turn_index = self._calculate_image_position(
                     cind, tind, column_size
                 )

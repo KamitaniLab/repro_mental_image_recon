@@ -28,17 +28,19 @@ import numpy as np
 import pandas as pd
 from matplotlib.patches import Patch
 
-from figure_asset_utils import ensure_directory, project_root
+from repro_mental_image_recon.figures.assets import ensure_directory, project_root
+from repro_mental_image_recon.figures.oat import N, REFERENCE_TAG
 
 PROJECT_ROOT = project_root()
 DEFAULT_OAT_DIR = PROJECT_ROOT / "results" / "oat_sampling_params" / "dreamsim_matrices"
 DEFAULT_SLICE_DIR = PROJECT_ROOT / "results" / "lr_a_T_slice" / "dreamsim_matrices"
 DEFAULT_OUT = PROJECT_ROOT / "assets" / "figA5" / "oat_slice_summary"
 
-N = 25
-REFERENCE_TAG = "lr_a0.00015_lr_b0.15_g0.055_T1e-06_woL1000_wL500_nR1000"
 REF_LR_A, REF_T = 0.00015, 1e-06
 
+# The slice tags end at ``_wL<n>_`` rather than ``_nR``, and every tag here is a
+# full condition name, so this anchors at the start where figures.oat.parse_fields
+# searches. Kept local for that reason.
 FIELD_RE = re.compile(
     r"lr_a(?P<lr_a>[\d.e+-]+)_lr_b(?P<lr_b>[\d.e+-]+)_g(?P<g>[\d.e+-]+)"
     r"_T(?P<T>[\d.e+-]+)_woL(?P<woL>\d+)_wL(?P<wL>\d+)_")

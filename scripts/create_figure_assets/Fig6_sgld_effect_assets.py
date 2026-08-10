@@ -4,8 +4,9 @@ Rows are the target, the reconstruction after the 1000 Adam steps (pre-SGLD, sav
 the reconstruction script under ``wo_lang/``), the reconstruction after the 500 SGLD
 steps, and their pixel-wise absolute difference.
 
-The manuscript shows this for the same stimuli as Figure 5B, so the selection is taken
-from ``Fig5_ablation_assets`` rather than restated here, where the two could drift.
+The manuscript shows this for the same stimuli as Figure 5B, so the selection comes
+from ``repro_mental_image_recon.figures.stimuli``, which Fig 5B also draws from,
+rather than being restated here where the two could drift.
 """
 
 from __future__ import annotations
@@ -15,14 +16,14 @@ from pathlib import Path
 
 from PIL import ImageChops
 
-from fig_utils import GroupImageDrawer
-from figure_asset_utils import (
+from repro_mental_image_recon.figures.assets import (
     ensure_directory,
     load_recon_images,
     load_target_images,
     project_root,
 )
-from Fig5_ablation_assets import SUBJECT_ID, _select_random_stimuli
+from repro_mental_image_recon.figures.drawing import GroupImageDrawer
+from repro_mental_image_recon.figures.stimuli import SUBJECT_ID, select_random_stimuli
 
 PROJECT_ROOT = project_root()
 RECON_ROOT = PROJECT_ROOT / "results" / "rep_recon_image_koide-majima"
@@ -30,7 +31,7 @@ OUTPUT_DIR = PROJECT_ROOT / "assets" / "fig06"
 
 BASE_CONDITION = "original_all"
 # "using the same target samples shown in Figure 5B" -- see module docstring.
-IMAGE_SELECTION = _select_random_stimuli()
+IMAGE_SELECTION = select_random_stimuli()
 
 
 def _recon_dir(recon_root: Path, extra: str | None = None) -> Path:

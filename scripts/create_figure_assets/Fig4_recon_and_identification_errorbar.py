@@ -29,7 +29,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from PIL import Image
 
-from figure_asset_utils import ensure_directory, project_root
+from repro_mental_image_recon.figures.assets import ensure_directory, project_root
 
 ROWS = ["source", "clip_vitb32", "openclip_laion", "alexnet_conv5", "alexnet_rand_conv5"]
 OPT_ROWS = ROWS[1:]

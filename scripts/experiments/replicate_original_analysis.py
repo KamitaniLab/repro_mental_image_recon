@@ -1,4 +1,3 @@
-import sys
 import argparse
 import yaml
 from PIL import Image
@@ -23,9 +22,8 @@ def main(reconMethod="original_all", save_base_dir=f"{RESULT_ROOT}/original_all"
     # Load config for imrecon
     with open("./scripts/config/config_recon.yaml", "rb") as f:
         dt_cfg = yaml.safe_load(f)
-    # Set directory of taming_transformer
+    # Set directory of taming_transformer (holds the VQGAN checkpoint and config)
     dir_taming_transformer = dt_cfg["file_path"]["taming_transformer_dir"]
-    sys.path.insert(0, dir_taming_transformer)
 
     # Set GPU if it's available
     cudaID = "cuda:0"

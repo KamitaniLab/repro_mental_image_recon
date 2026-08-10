@@ -41,7 +41,7 @@ import yaml
 from PIL import Image
 
 from recon_utils import get_target_label, convert_featname
-import recon_func_mod as recon_func
+from repro_mental_image_recon.recon import func_mod as recon_func
 
 seed = 42
 random.seed(seed)
@@ -62,7 +62,6 @@ def load_config():
 def load_models(dt_cfg):
     """Load the heavy models once and return them + CLIP metadata in a dict."""
     dir_taming_transformer = dt_cfg['file_path']['taming_transformer_dir']
-    sys.path.insert(0, dir_taming_transformer)
     import model_loading
 
     cudaID = "cuda:0"
