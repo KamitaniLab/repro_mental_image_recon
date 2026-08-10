@@ -7,8 +7,8 @@ reload needed), then renders source/recon image pairs sorted by matched distance
 
 Run:
   uv run python scripts/experiments/recon_distance_examples.py \
-      --summary_dir results/.../original_all/distance_summary \
-      --recon_root  results/rep_recon_image_koide-majima_comparing_SGD_updated_sampling_parameters \
+      --summary_dir results/rep_recon_image_koide-majima/original_all/distance_summary \
+      --recon_root  results/rep_recon_image_koide-majima \
       --method original_all --topk 8
 """
 
@@ -108,7 +108,9 @@ def main():
     )
     ap.add_argument(
         "--recon_root",
-        default="results/rep_recon_image_koide-majima_comparing_SGD_updated_sampling_parameters",
+        default="results/rep_recon_image_koide-majima",
+        help="reconstruction root holding <method>/<subject>/<roi>/ "
+        "(default: where replicate_original_analysis.py writes)",
     )
     ap.add_argument("--method", default="original_all")
     ap.add_argument("--roi", default="VC")

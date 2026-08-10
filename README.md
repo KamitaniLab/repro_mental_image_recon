@@ -167,7 +167,7 @@ pickles from analysis 1, these keep the full 500-step SGLD trajectory — which 
 ### Analysis 4 — circular evaluation analysis (Fig 4A, 4B)
 
 ```bash
-bash scripts/experiments/run_recovery_reps.sh
+uv run bash scripts/experiments/run_recovery_reps.sh
 uv run python scripts/create_figure_assets/Fig4_recon_and_identification_errorbar.py \
     --reps_root results/recovery_from_rand_images --err sd   # Fig 4A and Fig 4B
 ```
@@ -184,7 +184,7 @@ Figure 4 into `assets/fig04/`: the example noise targets and their feature-match
 for m in original_all AdamOnly_all VGGonly_all wo_SGLD_CLIP_all; do
     uv run python scripts/experiments/replicate_original_analysis.py $m
 done
-bash scripts/experiments/preference_analysis/run_preference_analysis.sh
+uv run bash scripts/experiments/preference_analysis/run_preference_analysis.sh
 
 uv run python scripts/create_figure_assets/Fig5_ablation_assets.py         # Fig 5B, 5D, 5E
 uv run python scripts/create_figure_assets/FigA2A4_ablation_recon_panels.py   # Fig A2, A3, A4
@@ -283,9 +283,11 @@ uv run python scripts/create_figure_assets/FigA7_determinism_cpu_vs_gpu.py
 ```
 
 The figure needs both devices. CPU reconstruction is slow — shorten it with `--n-sgd` /
-`--n-lang`. Dropping `--recon` runs only the forward/backward comparison, which needs no
-stimuli. Results under `results/determinism_check/` and `results/determinism_sweep/`;
-figure in `assets/figA7/`.
+`--n-lang`. Dropping `--recon` runs only the forward/backward comparison, which is
+self-contained: it probes the kernels on a generated input, so it needs neither the
+decoded features nor the VQGAN weights that `--recon` loads. Neither mode reads the
+stimulus images. Results under `results/determinism_check/` and
+`results/determinism_sweep/`; figure in `assets/figA7/`.
 
 The finding: on CPU two seeded runs are bit-identical. On GPU they are not, because the
 backward pass of bilinear interpolation (`grid_sampler_2d_backward_cuda`) accumulates

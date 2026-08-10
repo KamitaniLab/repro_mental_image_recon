@@ -1,10 +1,13 @@
 """Compare two reconstruction runs made with the same seed.
 
-Usage: python scripts/experiments/compare_recon_runs.py runA_dir runB_dir
 Reports, for every matching .pkl, whether the latent vectors are bit-identical
 and (if not) how large the discrepancy is relative to the value scale.
+
+Run:
+  uv run python scripts/experiments/compare_recon_runs.py runA_dir runB_dir
 """
 
+import argparse
 import glob
 import os
 import pickle
@@ -13,7 +16,13 @@ import sys
 import numpy as np
 from PIL import Image
 
-a_dir, b_dir = sys.argv[1], sys.argv[2]
+ap = argparse.ArgumentParser(
+    description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+)
+ap.add_argument("run_a", help="directory of the first run")
+ap.add_argument("run_b", help="directory of the second run, same layout as run_a")
+args = ap.parse_args()
+a_dir, b_dir = args.run_a, args.run_b
 
 a_pkls = sorted(glob.glob(os.path.join(a_dir, "**", "*.pkl"), recursive=True))
 if not a_pkls:

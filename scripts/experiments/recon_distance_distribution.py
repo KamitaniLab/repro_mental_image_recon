@@ -15,7 +15,7 @@ stats, a Mann-Whitney U test, and AUC (= pairwise-identification accuracy).
 
 Run:
   uv run python scripts/experiments/recon_distance_distribution.py \
-      --recon_root results/rep_recon_image_koide-majima_comparing_SGD_updated_sampling_parameters \
+      --recon_root results/rep_recon_image_koide-majima \
       --method original_all
 """
 
@@ -122,7 +122,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "--recon_root",
-        default="results/rep_recon_image_koide-majima_comparing_SGD_updated_sampling_parameters",
+        default="results/rep_recon_image_koide-majima",
+        help="reconstruction root holding <method>/<subject>/<roi>/ "
+        "(default: where replicate_original_analysis.py writes)",
     )
     ap.add_argument("--method", default="original_all")
     ap.add_argument("--subjects", default="S1,S2,S3")
