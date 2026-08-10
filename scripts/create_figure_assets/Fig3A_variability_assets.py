@@ -6,12 +6,10 @@ Four of the 10 runs, selected at random (seed-fixed for reproducibility), are di
 from __future__ import annotations
 
 import argparse
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import numpy as np
-
-from repro_mental_image_recon.figures.drawing import GroupImageDrawer
 
 from repro_mental_image_recon.figures.assets import (
     ensure_directory,
@@ -19,6 +17,7 @@ from repro_mental_image_recon.figures.assets import (
     load_target_images,
     project_root,
 )
+from repro_mental_image_recon.figures.drawing import GroupImageDrawer
 
 PROJECT_ROOT = project_root()
 RECON_ROOT = (

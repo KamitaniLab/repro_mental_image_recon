@@ -67,8 +67,12 @@ def export_diff_panel(recon_root: Path, output_dir: Path) -> Path:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--recon-root", type=Path, default=RECON_ROOT,
-                        help="directory holding <condition>/<subject>/VC{,/wo_lang}")
+    parser.add_argument(
+        "--recon-root",
+        type=Path,
+        default=RECON_ROOT,
+        help="directory holding <condition>/<subject>/VC{,/wo_lang}",
+    )
     parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR)
     args = parser.parse_args()
     saved = export_diff_panel(args.recon_root, ensure_directory(args.output_dir))

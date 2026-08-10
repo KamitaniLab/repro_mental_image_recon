@@ -1,10 +1,11 @@
+import copy
 import sys
+
 import numpy as np
 import torch
-import torch.optim as optim
-from torchvision import transforms
-import copy
 from PIL import Image
+from torch import optim
+from torchvision import transforms
 from tqdm import tqdm
 
 device_default = torch.device("cuda:0")

@@ -1,6 +1,7 @@
-from PIL import Image, ImageDraw, ImageFont
 import math
+
 import numpy as np
+from PIL import Image, ImageDraw, ImageFont
 
 
 class GroupImageDrawer:

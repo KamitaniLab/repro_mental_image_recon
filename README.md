@@ -6,7 +6,9 @@ This repository contains the code for the paper:
 *"Apparent and actual evidence in brain-to-image reconstruction: a reanalysis of Koide-Majima et al. (Neural Networks, 2024)"*  
 Preprint of an earlier version: https://arxiv.org/abs/2511.07960
 
-The repository collects scripts to re-run the imagery reconstruction analyses and reproduce all figures in the revised manuscript. It builds upon the original implementation in [`nkmjm/mental_img_recon`](https://github.com/nkmjm/mental_img_recon).
+The repository collects scripts to re-run the imagery reconstruction analyses and reproduce all figures in the revised manuscript. It builds upon the original implementation in
+[`nkmjm/mental_img_recon`](https://github.com/nkmjm/mental_img_recon/tree/2eff41d1bcf4814075596238e08a479a2e9f9110)
+(the repository carries no tags, so external references here are pinned to commit `2eff41d`).
 
 ## Validated environment
 - Ubuntu 20.04.2 LTS (kernel 5.15.0)
@@ -169,7 +171,7 @@ pickles as `preference_stats.csv`.
 
 In the manuscript, A2–A4 carry a final reference row from a separate iCNN implementation
 (Wang et al., 2025), which is not part of this repository:
-<https://github.com/KamitaniLab/InterSiteNeuralCodeConversion> (archived at
+<https://github.com/KamitaniLab/InterSiteNeuralCodeConversion/tree/V1.0.0> (archived at
 <https://doi.org/10.5281/zenodo.14910040>). `FigA2A4_ablation_recon_panels.py` omits that row
 by default and draws the four ablation conditions only. To include it, generate those
 reconstructions separately and pass their directory:
@@ -276,9 +278,12 @@ variant is a post-hoc diagnostic tool and was not used to produce the published 
 ## Dependencies
 
 All core reconstruction functions (VQGAN initialization, feature loading, optimization) come
-from the upstream [`mental_img_recon`](https://github.com/nkmjm/mental_img_recon) submodule,
-installed as an editable path dependency so the code that runs is always the code at the
-checked-out submodule commit. Path resolution is configured in
+from the upstream
+[`mental_img_recon`](https://github.com/nkmjm/mental_img_recon/tree/2eff41d1bcf4814075596238e08a479a2e9f9110)
+submodule, installed as an editable path dependency so the code that runs is always the code
+at the checked-out submodule commit. The submodule itself is pinned by commit in `.gitmodules`
+and the index, so `git clone --recursive` always fetches the same code. Path resolution is
+configured in
 `scripts/config/config_recon.yaml`, which handles both the `lib/` layout used here and a
 root-level layout for local development.
 

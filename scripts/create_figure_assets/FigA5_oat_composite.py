@@ -13,6 +13,7 @@ sweep's output tree.
 
     python scripts/create_figure_assets/FigA5_oat_composite.py
 """
+
 from __future__ import annotations
 
 import argparse
@@ -162,14 +163,20 @@ def draw_panel_a(fig, cell, roots, subject, color_of_tag):
     ncols = len(IMAGE_NAMES)
     # target row, a thin spacer, then the reconstruction rows.
     heights = [1.0, 0.32] + [1.0] * (len(RECON_ROWS) - 1)
-    inner = cell.subgridspec(len(RECON_ROWS) + 1, ncols, hspace=0.06, wspace=0.06,
-                             height_ratios=heights)
+    inner = cell.subgridspec(
+        len(RECON_ROWS) + 1, ncols, hspace=0.06, wspace=0.06, height_ratios=heights
+    )
     for r, (tag, roi, root_key) in enumerate(RECON_ROWS):
         grid_r = r if r == 0 else r + 1  # skip the spacer row (grid index 1)
         label = "target" if tag is None else pretty_label(tag, REFERENCE_TAG)
         color = "#222528" if tag is None else color_of_tag.get(tag, "#222528")
-        row_imgs = targets if tag is None else load_recon_images(
-            roots[root_key] / tag / subject / roi, list(IMAGE_NAMES))
+        row_imgs = (
+            targets
+            if tag is None
+            else load_recon_images(
+                roots[root_key] / tag / subject / roi, list(IMAGE_NAMES)
+            )
+        )
         for c, img in enumerate(row_imgs):
             ax = fig.add_subplot(inner[grid_r, c])
             ax.imshow(img)
@@ -179,9 +186,16 @@ def draw_panel_a(fig, cell, roots, subject, color_of_tag):
                 spine.set_color(color)
                 spine.set_linewidth(1.8 if tag is not None else 1.0)
             if c == 0:
-                ax.set_ylabel(label, fontsize=9, color=color,
-                              fontweight="bold" if tag == REFERENCE_TAG else "normal",
-                              rotation=0, ha="right", va="center", labelpad=8)
+                ax.set_ylabel(
+                    label,
+                    fontsize=9,
+                    color=color,
+                    fontweight="bold" if tag == REFERENCE_TAG else "normal",
+                    rotation=0,
+                    ha="right",
+                    va="center",
+                    labelpad=8,
+                )
 
 
 def label_axis(axis, ypos, labels, colors, ref_row):
@@ -195,8 +209,13 @@ def label_axis(axis, ypos, labels, colors, ref_row):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--matrix-dirs", type=Path, nargs="+", default=DEFAULT_MATRIX_DIRS,
-                        help="one or more DreamSim-matrix dirs; merged by tag (first wins)")
+    parser.add_argument(
+        "--matrix-dirs",
+        type=Path,
+        nargs="+",
+        default=DEFAULT_MATRIX_DIRS,
+        help="one or more DreamSim-matrix dirs; merged by tag (first wins)",
+    )
     parser.add_argument("--subject", default="S1")
     parser.add_argument("--n-clusters", type=int, default=4)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
@@ -207,7 +226,8 @@ def main():
     matched = np.array([conds[t]["matched"] for t in tags])
     null = np.array([conds[t]["null"] for t in tags])
     order, clusters_ord, colors, ref_row, cmap, color_of_tag = build_order(
-        tags, matched, null, args.n_clusters)
+        tags, matched, null, args.n_clusters
+    )
 
     tags_ord = [tags[i] for i in order]
     matched_ord, null_ord = matched[order], null[order]
@@ -221,34 +241,67 @@ def main():
     # the right; B's column is wider so the square nearly fills the top-row height.
     # The symbol labels ("alpha = 10, T = 0.0001") are wider than the raw tags
     # were, so the left margin and the A|B gutter both have to hold a full label.
-    outer = fig.add_gridspec(2, 2, width_ratios=[1.0, 1.55], height_ratios=[1.0, 1.5],
-                             hspace=0.19, wspace=0.50,
-                             left=0.175, right=0.985, top=0.93, bottom=0.055)
+    outer = fig.add_gridspec(
+        2,
+        2,
+        width_ratios=[1.0, 1.55],
+        height_ratios=[1.0, 1.5],
+        hspace=0.19,
+        wspace=0.50,
+        left=0.175,
+        right=0.985,
+        top=0.93,
+        bottom=0.055,
+    )
 
     # --- A: example reconstructions ---
     draw_panel_a(fig, outer[0, 0], RECON_ROOTS, args.subject, color_of_tag)
-    fig.text(0.175, 0.94, "A  Example reconstructions",
-             fontsize=12, fontweight="bold", ha="left", va="baseline")
+    fig.text(
+        0.175,
+        0.94,
+        "A  Example reconstructions",
+        fontsize=12,
+        fontweight="bold",
+        ha="left",
+        va="baseline",
+    )
 
     # --- B: condition x condition correlation ---
     ax_b = fig.add_subplot(outer[0, 1])
     corr = np.corrcoef(matched_ord)
     # aspect="auto" stretches the matrix to fill the cell height, matching panel A
     # and spreading the 38 row labels so they no longer overlap.
-    im_b = ax_b.imshow(corr, cmap="RdBu_r", vmin=-1, vmax=1, interpolation="nearest",
-                       aspect="auto")
-    ax_b.set_title("B  Condition correlation", loc="left", fontsize=12,
-                   fontweight="bold")
+    im_b = ax_b.imshow(
+        corr, cmap="RdBu_r", vmin=-1, vmax=1, interpolation="nearest", aspect="auto"
+    )
+    ax_b.set_title(
+        "B  Condition correlation", loc="left", fontsize=12, fontweight="bold"
+    )
     ax_b.set_xticks([])
     label_axis(ax_b, ypos, labels, colors, ref_row)
-    fig.colorbar(im_b, ax=ax_b, orientation="horizontal", location="bottom",
-                 fraction=0.05, pad=0.03, label="Pearson r")
+    fig.colorbar(
+        im_b,
+        ax=ax_b,
+        orientation="horizontal",
+        location="bottom",
+        fraction=0.05,
+        pad=0.03,
+        label="Pearson r",
+    )
     # Outline each contiguous behaviour-cluster block.
     start = 0
     for idx in range(1, len(clusters_ord) + 1):
         if idx == len(clusters_ord) or clusters_ord[idx] != clusters_ord[start]:
-            ax_b.add_patch(plt.Rectangle((start - 0.5, start - 0.5), idx - start, idx - start,
-                                         fill=False, edgecolor=colors[start], lw=2.2))
+            ax_b.add_patch(
+                plt.Rectangle(
+                    (start - 0.5, start - 0.5),
+                    idx - start,
+                    idx - start,
+                    fill=False,
+                    edgecolor=colors[start],
+                    lw=2.2,
+                )
+            )
             start = idx
 
     # --- C: raw matched vs null distance (+/-1 SD, matched/null dodged) ---
@@ -256,16 +309,38 @@ def main():
     m_mean, m_sd = matched_ord.mean(1), matched_ord.std(1, ddof=1)
     n_mean, n_sd = null_ord.mean(1), null_ord.std(1, ddof=1)
     dodge = 0.2
-    ax_c.errorbar(n_mean, ypos + dodge, xerr=n_sd, fmt="none", ecolor=NULL_COLOR, lw=1.0, alpha=0.8)
-    ax_c.errorbar(m_mean, ypos - dodge, xerr=m_sd, fmt="none", ecolor="#4a4f57", lw=1.0, alpha=0.8)
-    ax_c.scatter(n_mean, ypos + dodge, facecolors="white", edgecolors=NULL_COLOR, s=38, linewidths=1.5)
-    ax_c.scatter(m_mean, ypos - dodge, c=colors, s=40, edgecolors="white", linewidths=1.1)
+    ax_c.errorbar(
+        n_mean,
+        ypos + dodge,
+        xerr=n_sd,
+        fmt="none",
+        ecolor=NULL_COLOR,
+        lw=1.0,
+        alpha=0.8,
+    )
+    ax_c.errorbar(
+        m_mean, ypos - dodge, xerr=m_sd, fmt="none", ecolor="#4a4f57", lw=1.0, alpha=0.8
+    )
+    ax_c.scatter(
+        n_mean,
+        ypos + dodge,
+        facecolors="white",
+        edgecolors=NULL_COLOR,
+        s=38,
+        linewidths=1.5,
+    )
+    ax_c.scatter(
+        m_mean, ypos - dodge, c=colors, s=40, edgecolors="white", linewidths=1.1
+    )
     # Wrapped to three lines: the bottom-row titles must not run into each other
     # (C's cell is the narrow one), and C/D carry the same number of lines so
     # both start at the same height.
-    ax_c.set_title("C  Reconstruction distance:\ntarget vs non-target\n"
-                   "(filled/open; +/-1 SD)",
-                   loc="left", fontsize=12, fontweight="bold")
+    ax_c.set_title(
+        "C  Reconstruction distance:\ntarget vs non-target\n(filled/open; +/-1 SD)",
+        loc="left",
+        fontsize=12,
+        fontweight="bold",
+    )
     ax_c.set_xlabel("DreamSim distance", fontsize=10)
     label_axis(ax_c, ypos, labels, colors, ref_row)
 
@@ -275,10 +350,18 @@ def main():
     g_mean = gap.mean(1)
     g_sem = gap.std(1, ddof=1) / np.sqrt(gap.shape[1])
     ax_d.axvline(0, color="#4a4f57", lw=1.0, zorder=0)
-    ax_d.errorbar(g_mean, ypos, xerr=g_sem, fmt="none", ecolor="#4a4f57", lw=1.1, zorder=1)
-    ax_d.scatter(g_mean, ypos, c=colors, s=44, edgecolors="white", linewidths=1.1, zorder=2)
-    ax_d.set_title("D  Distance gap:\nnon-target - target\n(+/-1 SEM)",
-                   loc="left", fontsize=12, fontweight="bold")
+    ax_d.errorbar(
+        g_mean, ypos, xerr=g_sem, fmt="none", ecolor="#4a4f57", lw=1.1, zorder=1
+    )
+    ax_d.scatter(
+        g_mean, ypos, c=colors, s=44, edgecolors="white", linewidths=1.1, zorder=2
+    )
+    ax_d.set_title(
+        "D  Distance gap:\nnon-target - target\n(+/-1 SEM)",
+        loc="left",
+        fontsize=12,
+        fontweight="bold",
+    )
     ax_d.set_xlabel("distance gap", fontsize=10)
     ax_d.set_yticks([])
     # Fix the axis out to 0.1 so the gap is read on an absolute scale: even the

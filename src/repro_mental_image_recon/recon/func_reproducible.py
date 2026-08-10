@@ -24,15 +24,16 @@ fixed, bit-exact float equality is not guaranteed run-to-run. ``set_seed`` enabl
 is intentionally not used because those ops have no deterministic kernel.
 """
 
-import sys
+import copy
 import math
 import random
+import sys
+
 import numpy as np
 import torch
-import torch.optim as optim
-from torchvision import transforms
-import copy
 from PIL import Image
+from torch import optim
+from torchvision import transforms
 from tqdm import tqdm
 
 device_default = torch.device("cuda:0")
@@ -57,35 +58,58 @@ def set_seed(seed):
 ###
 # Preprocessing input images
 
+
 # Converting VQGAN output into CLIP input format
 def convertVQGANoutputIntoCLIPinput(VQGANoutput, imageSize=[224, 224]):
 
-    VQGANoutput = (VQGANoutput+1.0)*0.5
+    VQGANoutput = (VQGANoutput + 1.0) * 0.5
     if VQGANoutput.shape[2] == imageSize[0] and VQGANoutput.shape[3] == imageSize[1]:
-        preprocessBeforeCLIP = transforms.Compose([
-            transforms.Normalize(mean=[0.4814, 0.4578, 0.4082], std=[0.2686, 0.2613, 0.2757])])
+        preprocessBeforeCLIP = transforms.Compose(
+            [
+                transforms.Normalize(
+                    mean=[0.4814, 0.4578, 0.4082], std=[0.2686, 0.2613, 0.2757]
+                )
+            ]
+        )
     else:
-        preprocessBeforeCLIP = transforms.Compose([
-            transforms.Resize((imageSize[0], imageSize[1])),
-            transforms.Normalize(mean=[0.4814, 0.4578, 0.4082], std=[0.2686, 0.2613, 0.2757])])
+        preprocessBeforeCLIP = transforms.Compose(
+            [
+                transforms.Resize((imageSize[0], imageSize[1])),
+                transforms.Normalize(
+                    mean=[0.4814, 0.4578, 0.4082], std=[0.2686, 0.2613, 0.2757]
+                ),
+            ]
+        )
     inputForCLIP = preprocessBeforeCLIP(VQGANoutput)
 
     return inputForCLIP
 
+
 # Converting VQGAN output into VGG input format
 def convertVQGANoutputIntoVGGinput(VQGANoutput):
 
-    VQGANoutput = (VQGANoutput+1.0)*0.5
+    VQGANoutput = (VQGANoutput + 1.0) * 0.5
     if VQGANoutput.shape[2] == 224 and VQGANoutput.shape[3] == 224:
-        preprocessBeforeVGG = transforms.Compose([
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+        preprocessBeforeVGG = transforms.Compose(
+            [
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                )
+            ]
+        )
     else:
-        preprocessBeforeVGG = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+        preprocessBeforeVGG = transforms.Compose(
+            [
+                transforms.Resize((224, 224)),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+            ]
+        )
     inputForVGG = preprocessBeforeVGG(VQGANoutput)
 
     return inputForVGG
+
 
 # Preprocessing for CLIP input image
 def createCrops(img, num_crops=32, DEVICE=device_default, generator=None, augment=True):
@@ -110,25 +134,28 @@ def createCrops(img, num_crops=32, DEVICE=device_default, generator=None, augmen
     size2 = img.shape[3]
     noise_factor = 0.22
 
-    p = size1//2
+    p = size1 // 2
     # 1 x 3 x 672 x 672 (adding 112*2 on all sides to 448x448)
-    img = torch.nn.functional.pad(img, (p, p, p, p), mode='constant', value=0)
+    img = torch.nn.functional.pad(img, (p, p, p, p), mode="constant", value=0)
 
     if augment:
         augTransform = torch.nn.Sequential(
             transforms.RandomHorizontalFlip(),
-            transforms.RandomAffine(30, (.2, .2), fill=0)
+            transforms.RandomAffine(30, (0.2, 0.2), fill=0),
         ).to(DEVICE)
         # Make the (generator-unaware) torchvision augmentation reproducible by
         # deriving its seed from `generator`. `torch.manual_seed` writes the
         # global RNG, so the state is saved and restored around it to keep this
         # function side-effect-free.
-        aug_seed = int(torch.randint(0, 2**31 - 1, (1,),
-                                     generator=generator, device=DEVICE).item())
+        aug_seed = int(
+            torch.randint(0, 2**31 - 1, (1,), generator=generator, device=DEVICE).item()
+        )
         cpu_rng_state = torch.get_rng_state()
-        cuda_rng_state = (torch.cuda.get_rng_state(DEVICE)
-                          if torch.cuda.is_available() and
-                          torch.device(DEVICE).type == 'cuda' else None)
+        cuda_rng_state = (
+            torch.cuda.get_rng_state(DEVICE)
+            if torch.cuda.is_available() and torch.device(DEVICE).type == "cuda"
+            else None
+        )
         try:
             torch.manual_seed(aug_seed)
             img = augTransform(img)  # RandomHorizontalFlip and RandomAffine
@@ -139,25 +166,41 @@ def createCrops(img, num_crops=32, DEVICE=device_default, generator=None, augmen
 
     crop_set = []
     for ch in range(num_crops):
-        gap1 = int(torch.normal(1.2, .3, (), generator=generator,
-                                device=DEVICE).clamp(.43, 1.9).item() * size1)
-        offsetx = int(torch.randint(0, int(size1*2-gap1), (1,),
-                                    generator=generator, device=DEVICE).item())
-        offsety = int(torch.randint(0, int(size1*2-gap1), (1,),
-                                    generator=generator, device=DEVICE).item())
-        crop = img[:, :, offsetx:offsetx+gap1, offsety:offsety+gap1]
+        gap1 = int(
+            torch.normal(1.2, 0.3, (), generator=generator, device=DEVICE)
+            .clamp(0.43, 1.9)
+            .item()
+            * size1
+        )
+        offsetx = int(
+            torch.randint(
+                0, int(size1 * 2 - gap1), (1,), generator=generator, device=DEVICE
+            ).item()
+        )
+        offsety = int(
+            torch.randint(
+                0, int(size1 * 2 - gap1), (1,), generator=generator, device=DEVICE
+            ).item()
+        )
+        crop = img[:, :, offsetx : offsetx + gap1, offsety : offsety + gap1]
         crop = torch.nn.functional.interpolate(
-            crop, (size1, size2), mode='bilinear', align_corners=True)
+            crop, (size1, size2), mode="bilinear", align_corners=True
+        )
         crop_set.append(crop)
     img_crops = torch.cat(crop_set, 0)  # 30 x 3 x 224 x 224
 
-    randnormal = torch.randn(img_crops.shape, device=img_crops.device,
-                             dtype=img_crops.dtype, generator=generator)
+    randnormal = torch.randn(
+        img_crops.shape,
+        device=img_crops.device,
+        dtype=img_crops.dtype,
+        generator=generator,
+    )
 
-    randstotal = torch.rand((img_crops.shape[0], 1, 1, 1),
-                            generator=generator, device=DEVICE)  # 32
+    randstotal = torch.rand(
+        (img_crops.shape[0], 1, 1, 1), generator=generator, device=DEVICE
+    )  # 32
 
-    img_crops = img_crops + noise_factor*randstotal*randnormal
+    img_crops = img_crops + noise_factor * randstotal * randnormal
 
     return img_crops
 
@@ -178,8 +221,8 @@ def extract_VGG_features(model, input, target_layers, prehook_dict={}):
             outputs_.append(input[0][v].clone())
 
     for layer in target_layers:
-        t_layername = layer.split('[')[0]
-        t_layerno = int(layer.split('[')[1].replace(']', ''))
+        t_layername = layer.split("[")[0]
+        t_layerno = int(layer.split("[")[1].replace("]", ""))
         target_layer = getattr(model_, t_layername)
         if layer not in prehook_dict:
             target_layer[t_layerno].register_forward_hook(hook)
@@ -197,25 +240,40 @@ def extract_VGG_features(model, input, target_layers, prehook_dict={}):
 
 ###
 # Compute Loss
-def compute_loss_CLIP(CLIPmodel, CLIPmodelWeight, input1, input1_type, input2, input2_type, meanCLIPfeature, cosSimilarity, similarity='corr', DEVICE=device_default, input1_preCropped=None, input2_preCropped=None, generator=None):
+def compute_loss_CLIP(
+    CLIPmodel,
+    CLIPmodelWeight,
+    input1,
+    input1_type,
+    input2,
+    input2_type,
+    meanCLIPfeature,
+    cosSimilarity,
+    similarity="corr",
+    DEVICE=device_default,
+    input1_preCropped=None,
+    input2_preCropped=None,
+    generator=None,
+):
 
     for index_CLIPmodel in range(len(CLIPmodel)):
-
         # Get x1, x2
         # for input1
-        if input1_type == 'img':
+        if input1_type == "img":
             # Determinism: the crops must be produced once, outside this loop,
             # with a controlled generator and passed in via input1_preCropped.
             if input1_preCropped is None:
-                raise RuntimeError('Pass pre-cropped CLIP inputs for determinism')
+                raise RuntimeError("Pass pre-cropped CLIP inputs for determinism")
             CLIPfeature1 = CLIPmodel[index_CLIPmodel].encode_image(input1_preCropped)
             x1 = CLIPfeature1.reshape(input1_preCropped.shape[0], -1)
-        elif input1_type == 'feat':
+        elif input1_type == "feat":
             x1 = input1[index_CLIPmodel]
         # for input2
-        if input2_type == 'img':
+        if input2_type == "img":
             if input2_preCropped is not None:
-                CLIPfeature2 = CLIPmodel[index_CLIPmodel].encode_image(input2_preCropped)
+                CLIPfeature2 = CLIPmodel[index_CLIPmodel].encode_image(
+                    input2_preCropped
+                )
                 x2 = CLIPfeature2.reshape(input2_preCropped.shape[0], -1)
             else:
                 # Crops are drawn here rather than passed in; `generator` must be
@@ -223,79 +281,95 @@ def compute_loss_CLIP(CLIPmodel, CLIPmodelWeight, input1, input1_type, input2, i
                 # seed-0 stream and the crops would never vary.
                 if generator is None:
                     raise RuntimeError(
-                        'compute_loss_CLIP: pass generator= (or input2_preCropped=) '
-                        'so the input2 crops are reproducible and still vary per call')
+                        "compute_loss_CLIP: pass generator= (or input2_preCropped=) "
+                        "so the input2 crops are reproducible and still vary per call"
+                    )
                 CLIPfeature2 = CLIPmodel[index_CLIPmodel].encode_image(
-                    createCrops(input2, DEVICE=DEVICE, generator=generator))
+                    createCrops(input2, DEVICE=DEVICE, generator=generator)
+                )
                 x2 = CLIPfeature2.reshape(CLIPfeature2.shape[0], -1)
-        elif input2_type == 'feat':
+        elif input2_type == "feat":
             x2 = input2[index_CLIPmodel]
 
         # Subtract the mean feature vector
-        x1 = x1-meanCLIPfeature[index_CLIPmodel].reshape(1, -1)
-        x2 = x2-meanCLIPfeature[index_CLIPmodel].reshape(1, -1)
+        x1 = x1 - meanCLIPfeature[index_CLIPmodel].reshape(1, -1)
+        x2 = x2 - meanCLIPfeature[index_CLIPmodel].reshape(1, -1)
 
         # Compute similarity
-        if similarity == 'corr':
-            loss_thisLayer = -cosSimilarity(x1-x1.mean(dim=1, keepdim=True),
-                                            x2-x2.mean(dim=1, keepdim=True)).mean()
-        elif similarity == 'cosine':
+        if similarity == "corr":
+            loss_thisLayer = -cosSimilarity(
+                x1 - x1.mean(dim=1, keepdim=True), x2 - x2.mean(dim=1, keepdim=True)
+            ).mean()
+        elif similarity == "cosine":
             loss_thisLayer = -cosSimilarity(x1, x2).mean()
-        elif similarity == 'MSE':
-            loss_thisLayer = ((x1-x2)**2).mean()
+        elif similarity == "MSE":
+            loss_thisLayer = ((x1 - x2) ** 2).mean()
         else:
-            print('Error: Similarity metric should be corr, cosine, or MSE.')
+            print("Error: Similarity metric should be corr, cosine, or MSE.")
             sys.exit(1)
 
         if index_CLIPmodel == 0:
-            loss_CLIP = loss_thisLayer*CLIPmodelWeight[index_CLIPmodel]
+            loss_CLIP = loss_thisLayer * CLIPmodelWeight[index_CLIPmodel]
         else:
-            loss_CLIP = loss_thisLayer * \
-                CLIPmodelWeight[index_CLIPmodel]+loss_CLIP
+            loss_CLIP = loss_thisLayer * CLIPmodelWeight[index_CLIPmodel] + loss_CLIP
 
     return loss_CLIP
 
 
-def compute_loss_VGG(VGGmodel, usedLayer, layerWeight, input1, input1_type, input2, input2_type, meanVGGfeature, cosSimilarity, similarity='corr'):
+def compute_loss_VGG(
+    VGGmodel,
+    usedLayer,
+    layerWeight,
+    input1,
+    input1_type,
+    input2,
+    input2_type,
+    meanVGGfeature,
+    cosSimilarity,
+    similarity="corr",
+):
 
-    if input1_type == 'img':
+    if input1_type == "img":
         VGGfeature_allLayer1 = extract_VGG_features(
-            VGGmodel, input1, usedLayer)  # get_cnn_features
-    if input2_type == 'img':
-        VGGfeature_allLayer2 = extract_VGG_features(
-            VGGmodel, input2, usedLayer)
+            VGGmodel, input1, usedLayer
+        )  # get_cnn_features
+    if input2_type == "img":
+        VGGfeature_allLayer2 = extract_VGG_features(VGGmodel, input2, usedLayer)
     for index_usedLayer in range(len(usedLayer)):
         # for input1
-        if input1_type == 'img':
+        if input1_type == "img":
             x1 = VGGfeature_allLayer1[index_usedLayer].reshape(
-                VGGfeature_allLayer1[index_usedLayer].shape[0], -1)
-        elif input1_type == 'feat':
+                VGGfeature_allLayer1[index_usedLayer].shape[0], -1
+            )
+        elif input1_type == "feat":
             x1 = input1[index_usedLayer].reshape(1, -1)
         # for input2
-        if input2_type == 'img':
+        if input2_type == "img":
             x2 = VGGfeature_allLayer2[index_usedLayer].reshape(
-                VGGfeature_allLayer2[index_usedLayer].shape[0], -1)
-        elif input2_type == 'feat':
+                VGGfeature_allLayer2[index_usedLayer].shape[0], -1
+            )
+        elif input2_type == "feat":
             x2 = input2[index_usedLayer].reshape(1, -1)
 
         # Subtract the mean feature vector
-        x1 = x1-meanVGGfeature[index_usedLayer].reshape(1, -1)
-        x2 = x2-meanVGGfeature[index_usedLayer].reshape(1, -1)
+        x1 = x1 - meanVGGfeature[index_usedLayer].reshape(1, -1)
+        x2 = x2 - meanVGGfeature[index_usedLayer].reshape(1, -1)
 
-        if similarity == 'corr':
-            loss_thisLayer = -cosSimilarity(x1-x1.mean(dim=1, keepdim=True),
-                                            x2-x2.mean(dim=1, keepdim=True)).mean()
-        elif similarity == 'cosine':
+        if similarity == "corr":
+            loss_thisLayer = -cosSimilarity(
+                x1 - x1.mean(dim=1, keepdim=True), x2 - x2.mean(dim=1, keepdim=True)
+            ).mean()
+        elif similarity == "cosine":
             loss_thisLayer = -cosSimilarity(x1, x2).mean()
-        elif similarity == 'MSE':
-            loss_thisLayer = ((x1-x2)**2).mean()
+        elif similarity == "MSE":
+            loss_thisLayer = ((x1 - x2) ** 2).mean()
         else:
-            print('Error: Similarity metric should be corr, cosine, or MSE.')
+            print("Error: Similarity metric should be corr, cosine, or MSE.")
             sys.exit(1)
         if index_usedLayer == 0:
-            loss_VGG = loss_thisLayer*layerWeight[index_usedLayer]
+            loss_VGG = loss_thisLayer * layerWeight[index_usedLayer]
         else:
-            loss_VGG = loss_thisLayer*layerWeight[index_usedLayer] + loss_VGG
+            loss_VGG = loss_thisLayer * layerWeight[index_usedLayer] + loss_VGG
 
         del x1, x2
 
@@ -305,26 +379,30 @@ def compute_loss_VGG(VGGmodel, usedLayer, layerWeight, input1, input1_type, inpu
 ###
 # Utils in imageRecon
 
+
 def set_initInput(initInput, initInputType, VQGANmodel, DEVICE=device_default):
 
     # The initial image given by the user is transformed into VQGAN's latent vector
 
-    if initInputType == 'PIL':
-        VQGANlatentSize = 14*1
-        conversionFromPILintoTorchTensor = transforms.Compose([
-            transforms.CenterCrop(224),
-            transforms.Resize((VQGANlatentSize*16, VQGANlatentSize*16)),
-            transforms.ToTensor()
-        ])
+    if initInputType == "PIL":
+        VQGANlatentSize = 14 * 1
+        conversionFromPILintoTorchTensor = transforms.Compose(
+            [
+                transforms.CenterCrop(224),
+                transforms.Resize((VQGANlatentSize * 16, VQGANlatentSize * 16)),
+                transforms.ToTensor(),
+            ]
+        )
         currentLatentVector = conversionFromPILintoTorchTensor(initInput)
         currentLatentVector = currentLatentVector.unsqueeze(0)
         currentLatentVector = currentLatentVector.to(DEVICE)
-        currentLatentVector = (currentLatentVector*2)-1
+        currentLatentVector = (currentLatentVector * 2) - 1
         currentLatentVector = VQGANmodel.encode(currentLatentVector)
-        currentLatentVector = currentLatentVector[0].detach(
-        ).clone().to(DEVICE).requires_grad_()
+        currentLatentVector = (
+            currentLatentVector[0].detach().clone().to(DEVICE).requires_grad_()
+        )
 
-    elif initInputType == 'latentVector':
+    elif initInputType == "latentVector":
         currentLatentVector = initInput
 
     return currentLatentVector
@@ -332,24 +410,24 @@ def set_initInput(initInput, initInputType, VQGANmodel, DEVICE=device_default):
 
 def set_optimizer(currentLatentVector, optimizer, lr):
     # Set the gradient method (AdamW or Adam).
-    if optimizer == 'AdamW':
+    if optimizer == "AdamW":
         op = optim.AdamW([currentLatentVector], lr=lr, weight_decay=0.1)
-    elif optimizer == 'Adam':
+    elif optimizer == "Adam":
         op = optim.Adam([currentLatentVector], lr=lr)
-    elif optimizer == 'SGD':
+    elif optimizer == "SGD":
         op = optim.SGD([currentLatentVector], lr=lr)
     else:
-        print('Error: Optimizer must be Adam, AdamW, or SGD.')
+        print("Error: Optimizer must be Adam, AdamW, or SGD.")
         sys.exit(1)
     return op
 
 
 def custom_to_pil(x):
     x = x.detach().cpu()
-    x = torch.clamp(x, -1., 1.)
-    x = (x + 1.)/2.
+    x = torch.clamp(x, -1.0, 1.0)
+    x = (x + 1.0) / 2.0
     x = x.permute(1, 2, 0).numpy()
-    x = (255*x).astype(np.uint8)
+    x = (255 * x).astype(np.uint8)
     x = Image.fromarray(x)
     if not x.mode == "RGB":
         x = x.convert("RGB")
@@ -366,31 +444,33 @@ def get_recImg(VQGANmodel, currentLatentVector, DEVICE=device_default):
 
     return recImg
 
+
 ###
 # MAIN func.: image reconstruction
 
-class imageRecon():
 
-    def __init__(self,
-                 targetVGGfeature,
-                 meanVGGfeature,
-                 layerWeight,
-                 VGGmodel,
-                 usedLayer,
-                 targetCLIPfeature,
-                 meanCLIPfeature,
-                 CLIPmodelWeight,
-                 CLIPmodel,
-                 VQGANmodel,
-                 initInput,
-                 initInputType='PIL',
-                 similarity='corr',
-                 disp_every=100,
-                 numReps=500,
-                 CLIPcoef=0.25,
-                 DEVICE=device_default,
-                 seed=42
-                 ):
+class imageRecon:
+    def __init__(
+        self,
+        targetVGGfeature,
+        meanVGGfeature,
+        layerWeight,
+        VGGmodel,
+        usedLayer,
+        targetCLIPfeature,
+        meanCLIPfeature,
+        CLIPmodelWeight,
+        CLIPmodel,
+        VQGANmodel,
+        initInput,
+        initInputType="PIL",
+        similarity="corr",
+        disp_every=100,
+        numReps=500,
+        CLIPcoef=0.25,
+        DEVICE=device_default,
+        seed=42,
+    ):
 
         self.targetVGGfeature = targetVGGfeature
         self.meanVGGfeature = meanVGGfeature
@@ -428,7 +508,16 @@ class imageRecon():
             self.snapshots.append(vec.detach().cpu().numpy().copy())
             self.snap_steps.append(step)
 
-    def withoutLangevin(self, initInput=None, initInputType='PIL', optimizer='Adam', lr=0.5, T=1.0, numReps=None, returnVec=False):
+    def withoutLangevin(
+        self,
+        initInput=None,
+        initInputType="PIL",
+        optimizer="Adam",
+        lr=0.5,
+        T=1.0,
+        numReps=None,
+        returnVec=False,
+    ):
 
         if numReps is None:
             numReps = self.numReps
@@ -439,7 +528,8 @@ class imageRecon():
             initInputType = self.initInputType
 
         currentLatentVector = set_initInput(
-            initInput, initInputType, self.VQGANmodel, DEVICE=self.DEVICE)
+            initInput, initInputType, self.VQGANmodel, DEVICE=self.DEVICE
+        )
 
         # Set the gradient method (AdamW or Adam).
         op = set_optimizer(currentLatentVector, optimizer, lr)
@@ -448,8 +538,9 @@ class imageRecon():
         cosSimilarity = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
 
         # Start iterative optimization.
-        for index_rep in tqdm(range(numReps), ncols=100, desc="Progress rate"):  # range(numReps)
-
+        for index_rep in tqdm(
+            range(numReps), ncols=100, desc="Progress rate"
+        ):  # range(numReps)
             # The latent vector is converted into the corresponding image.
             VQGANoutput = self.VQGANmodel.decode(currentLatentVector)
             VQGANoutput_VGG = convertVQGANoutputIntoVGGinput(VQGANoutput)
@@ -463,23 +554,39 @@ class imageRecon():
             # Crops are produced once here with the deterministic generator and
             # passed into compute_loss_CLIP (see "pre-cropped" determinism).
             clip_crops = createCrops(
-                VQGANoutput_CLIP, DEVICE=self.DEVICE,
-                generator=self.gen, augment=True)
-            loss_CLIP = compute_loss_CLIP(self.CLIPmodel, self.CLIPmodelWeight, VQGANoutput_CLIP, 'img',
-                                          self.targetCLIPfeature, 'feat', self.meanCLIPfeature, cosSimilarity,
-                                          DEVICE=self.DEVICE, input1_preCropped=clip_crops)
+                VQGANoutput_CLIP, DEVICE=self.DEVICE, generator=self.gen, augment=True
+            )
+            loss_CLIP = compute_loss_CLIP(
+                self.CLIPmodel,
+                self.CLIPmodelWeight,
+                VQGANoutput_CLIP,
+                "img",
+                self.targetCLIPfeature,
+                "feat",
+                self.meanCLIPfeature,
+                cosSimilarity,
+                DEVICE=self.DEVICE,
+                input1_preCropped=clip_crops,
+            )
 
             # Compute the VGG similarity
             if len(self.usedLayer) == 0:
                 loss_VGG = torch.tensor(0, dtype=torch.float32).to(self.DEVICE)
             else:
                 loss_VGG = compute_loss_VGG(
-                    self.VGGmodel, self.usedLayer, self.layerWeight,
-                    VQGANoutput_VGG, 'img', self.targetVGGfeature,
-                    'feat', self.meanVGGfeature, cosSimilarity)
+                    self.VGGmodel,
+                    self.usedLayer,
+                    self.layerWeight,
+                    VQGANoutput_VGG,
+                    "img",
+                    self.targetVGGfeature,
+                    "feat",
+                    self.meanVGGfeature,
+                    cosSimilarity,
+                )
 
             # Total loss
-            loss = (loss_VGG + loss_CLIP * self.CLIPcoef)/T
+            loss = (loss_VGG + loss_CLIP * self.CLIPcoef) / T
 
             currentLatentVector.retain_grad()
             VQGANoutput.retain_grad()
@@ -502,23 +609,34 @@ class imageRecon():
             loss_CLIP_np = loss_CLIP.detach().cpu().numpy()
 
             # Plot the results.
-            if (index_rep+1) % self.disp_every == 0:
+            if (index_rep + 1) % self.disp_every == 0:
                 recImg = get_recImg(
-                    self.VQGANmodel, currentLatentVector, DEVICE=self.DEVICE)
-                yield recImg, index_rep+1, loss_VGG_np, loss_CLIP_np, None
+                    self.VQGANmodel, currentLatentVector, DEVICE=self.DEVICE
+                )
+                yield recImg, index_rep + 1, loss_VGG_np, loss_CLIP_np, None
 
         # Output the results and finish.
-        recImg = get_recImg(
-            self.VQGANmodel, currentLatentVector, DEVICE=self.DEVICE)
+        recImg = get_recImg(self.VQGANmodel, currentLatentVector, DEVICE=self.DEVICE)
 
         if returnVec:
-            yield recImg, index_rep+1, loss_VGG_np, loss_CLIP_np, currentLatentVector
+            yield recImg, index_rep + 1, loss_VGG_np, loss_CLIP_np, currentLatentVector
         else:
-            yield recImg, index_rep+1, loss_VGG_np, loss_CLIP_np, None
+            yield recImg, index_rep + 1, loss_VGG_np, loss_CLIP_np, None
 
     # Noiseless SGLD (= plain gradient descent on the latent vector).
     # Same update as Langevin but without the gaussian noise term.
-    def SGD(self, initInput=None, initInputType='PIL', lr_gamma=0.1, lr_a=1, lr_b=1, lrs=[], T=0.0001, numReps=None, returnVec=False):
+    def SGD(
+        self,
+        initInput=None,
+        initInputType="PIL",
+        lr_gamma=0.1,
+        lr_a=1,
+        lr_b=1,
+        lrs=[],
+        T=0.0001,
+        numReps=None,
+        returnVec=False,
+    ):
 
         if numReps is None:
             numReps = self.numReps
@@ -527,7 +645,7 @@ class imageRecon():
         if len(lrs) == 0:
             lrs = np.nan * np.ones(numReps)
             for t in range(numReps):
-                lrs[t] = lr_a*((lr_b + t)**-lr_gamma)
+                lrs[t] = lr_a * ((lr_b + t) ** -lr_gamma)
 
         # The initial image given by the user is transformed into VQGAN's latent vector
         if initInput is None:
@@ -535,15 +653,17 @@ class imageRecon():
             initInputType = self.initInputType
 
         currentLatentVector = set_initInput(
-            initInput, initInputType, self.VQGANmodel, DEVICE=self.DEVICE)
+            initInput, initInputType, self.VQGANmodel, DEVICE=self.DEVICE
+        )
 
         # Parepare basic functions to be used later.
         cosSimilarity = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
 
         # Start iterative optimization.
         t_lr = lrs[0]  # init state
-        for index_rep in tqdm(range(numReps), ncols=100, desc="Progress rate"):  # range(numReps)
-
+        for index_rep in tqdm(
+            range(numReps), ncols=100, desc="Progress rate"
+        ):  # range(numReps)
             # The latent vector is converted into the corresponding image.
             VQGANoutput = self.VQGANmodel.decode(currentLatentVector)
             VQGANoutput_VGG = convertVQGANoutputIntoVGGinput(VQGANoutput)
@@ -555,24 +675,39 @@ class imageRecon():
 
             # Compute the semantic similarity based on CLIP features
             clip_crops = createCrops(
-                VQGANoutput_CLIP, DEVICE=self.DEVICE,
-                generator=self.gen, augment=True)
+                VQGANoutput_CLIP, DEVICE=self.DEVICE, generator=self.gen, augment=True
+            )
             loss_CLIP = compute_loss_CLIP(
-                self.CLIPmodel, self.CLIPmodelWeight, VQGANoutput_CLIP, 'img',
-                self.targetCLIPfeature, 'feat', self.meanCLIPfeature,
-                cosSimilarity, DEVICE=self.DEVICE, input1_preCropped=clip_crops)
+                self.CLIPmodel,
+                self.CLIPmodelWeight,
+                VQGANoutput_CLIP,
+                "img",
+                self.targetCLIPfeature,
+                "feat",
+                self.meanCLIPfeature,
+                cosSimilarity,
+                DEVICE=self.DEVICE,
+                input1_preCropped=clip_crops,
+            )
 
             # Compute the VGG similarity
             if len(self.usedLayer) == 0:
                 loss_VGG = torch.tensor(0, dtype=torch.float32).to(self.DEVICE)
             else:
                 loss_VGG = compute_loss_VGG(
-                    self.VGGmodel, self.usedLayer, self.layerWeight,
-                    VQGANoutput_VGG, 'img', self.targetVGGfeature, 'feat',
-                    self.meanVGGfeature, cosSimilarity)
+                    self.VGGmodel,
+                    self.usedLayer,
+                    self.layerWeight,
+                    VQGANoutput_VGG,
+                    "img",
+                    self.targetVGGfeature,
+                    "feat",
+                    self.meanVGGfeature,
+                    cosSimilarity,
+                )
 
             # Total loss
-            loss = (loss_VGG + loss_CLIP * self.CLIPcoef)
+            loss = loss_VGG + loss_CLIP * self.CLIPcoef
 
             currentLatentVector.retain_grad()
             VQGANoutput.retain_grad()
@@ -589,34 +724,48 @@ class imageRecon():
 
             # Update (no noise -> deterministic gradient descent)
             currentLatentVector = (
-                currentLatentVector - currentLatentVector.grad * (t_lr/T)).detach().requires_grad_()
+                (currentLatentVector - currentLatentVector.grad * (t_lr / T))
+                .detach()
+                .requires_grad_()
+            )
 
             # Update learning rate (lr)
-            if index_rep+1 != numReps:
-                t_lr = lrs[index_rep+1]  # for the next step
+            if index_rep + 1 != numReps:
+                t_lr = lrs[index_rep + 1]  # for the next step
 
             loss_VGG_np = loss_VGG.detach().cpu().numpy()
             loss_CLIP_np = loss_CLIP.detach().cpu().numpy()
 
             # Plot the results.
-            if (index_rep+1) % self.disp_every == 0:
+            if (index_rep + 1) % self.disp_every == 0:
                 recImg = get_recImg(
-                    self.VQGANmodel, currentLatentVector, DEVICE=self.DEVICE)
-                yield recImg, index_rep+1, loss_VGG_np, loss_CLIP_np, None
+                    self.VQGANmodel, currentLatentVector, DEVICE=self.DEVICE
+                )
+                yield recImg, index_rep + 1, loss_VGG_np, loss_CLIP_np, None
 
         # Output the results and finish.
-        recImg = get_recImg(
-            self.VQGANmodel, currentLatentVector, DEVICE=self.DEVICE)
+        recImg = get_recImg(self.VQGANmodel, currentLatentVector, DEVICE=self.DEVICE)
 
         if returnVec:
-            yield recImg, index_rep+1, loss_VGG_np, loss_CLIP_np, currentLatentVector
+            yield recImg, index_rep + 1, loss_VGG_np, loss_CLIP_np, currentLatentVector
         else:
-            yield recImg, index_rep+1, loss_VGG_np, loss_CLIP_np, None
+            yield recImg, index_rep + 1, loss_VGG_np, loss_CLIP_np, None
 
     # Define a function to perform image reconstruction
     # Reference for optimizer: https://tzmi.hatenablog.com/entry/2020/03/04/224258
 
-    def Langevin(self, initInput=None, initInputType='PIL', lr_gamma=0.1, lr_a=1, lr_b=1, lrs=[], T=0.0001, numReps=None, returnVec=False):
+    def Langevin(
+        self,
+        initInput=None,
+        initInputType="PIL",
+        lr_gamma=0.1,
+        lr_a=1,
+        lr_b=1,
+        lrs=[],
+        T=0.0001,
+        numReps=None,
+        returnVec=False,
+    ):
 
         if numReps is None:
             numReps = self.numReps
@@ -625,7 +774,7 @@ class imageRecon():
         if len(lrs) == 0:
             lrs = np.nan * np.ones(numReps)
             for t in range(numReps):
-                lrs[t] = lr_a*((lr_b + t)**-lr_gamma)
+                lrs[t] = lr_a * ((lr_b + t) ** -lr_gamma)
 
         # The initial image given by the user is transformed into VQGAN's latent vector
         if initInput is None:
@@ -633,15 +782,17 @@ class imageRecon():
             initInputType = self.initInputType
 
         currentLatentVector = set_initInput(
-            initInput, initInputType, self.VQGANmodel, DEVICE=self.DEVICE)
+            initInput, initInputType, self.VQGANmodel, DEVICE=self.DEVICE
+        )
 
         # Parepare basic functions to be used later.
         cosSimilarity = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
 
         # Start iterative optimization.
         t_lr = lrs[0]  # init state
-        for index_rep in tqdm(range(numReps), ncols=100, desc="Progress rate"):  # range(numReps)
-
+        for index_rep in tqdm(
+            range(numReps), ncols=100, desc="Progress rate"
+        ):  # range(numReps)
             # The latent vector is converted into the corresponding image.
             VQGANoutput = self.VQGANmodel.decode(currentLatentVector)
             VQGANoutput_VGG = convertVQGANoutputIntoVGGinput(VQGANoutput)
@@ -653,24 +804,39 @@ class imageRecon():
 
             # Compute the semantic similarity based on CLIP features
             clip_crops = createCrops(
-                VQGANoutput_CLIP, DEVICE=self.DEVICE,
-                generator=self.gen, augment=True)
+                VQGANoutput_CLIP, DEVICE=self.DEVICE, generator=self.gen, augment=True
+            )
             loss_CLIP = compute_loss_CLIP(
-                self.CLIPmodel, self.CLIPmodelWeight, VQGANoutput_CLIP, 'img',
-                self.targetCLIPfeature, 'feat', self.meanCLIPfeature,
-                cosSimilarity, DEVICE=self.DEVICE, input1_preCropped=clip_crops)
+                self.CLIPmodel,
+                self.CLIPmodelWeight,
+                VQGANoutput_CLIP,
+                "img",
+                self.targetCLIPfeature,
+                "feat",
+                self.meanCLIPfeature,
+                cosSimilarity,
+                DEVICE=self.DEVICE,
+                input1_preCropped=clip_crops,
+            )
 
             # Compute the VGG similarity
             if len(self.usedLayer) == 0:
                 loss_VGG = torch.tensor(0, dtype=torch.float32).to(self.DEVICE)
             else:
                 loss_VGG = compute_loss_VGG(
-                    self.VGGmodel, self.usedLayer, self.layerWeight,
-                    VQGANoutput_VGG, 'img', self.targetVGGfeature, 'feat',
-                    self.meanVGGfeature, cosSimilarity)
+                    self.VGGmodel,
+                    self.usedLayer,
+                    self.layerWeight,
+                    VQGANoutput_VGG,
+                    "img",
+                    self.targetVGGfeature,
+                    "feat",
+                    self.meanVGGfeature,
+                    cosSimilarity,
+                )
 
             # Total loss
-            loss = (loss_VGG + loss_CLIP * self.CLIPcoef)
+            loss = loss_VGG + loss_CLIP * self.CLIPcoef
 
             currentLatentVector.retain_grad()
             VQGANoutput.retain_grad()
@@ -687,18 +853,27 @@ class imageRecon():
 
             # Update
             currentLatentVector = (
-                currentLatentVector - currentLatentVector.grad * (t_lr/T)).detach().requires_grad_()
+                (currentLatentVector - currentLatentVector.grad * (t_lr / T))
+                .detach()
+                .requires_grad_()
+            )
 
             # Langevin ------------------------------
             # Add gaussian noise. Reproducible: drawn from self.gen instead
             # of np.random.normal (the original, global-RNG source).
             sigma = math.sqrt(float(t_lr))
-            gauss_noise = torch.randn(
-                currentLatentVector.shape, device=currentLatentVector.device,
-                dtype=currentLatentVector.dtype, generator=self.gen) * sigma
+            gauss_noise = (
+                torch.randn(
+                    currentLatentVector.shape,
+                    device=currentLatentVector.device,
+                    dtype=currentLatentVector.dtype,
+                    generator=self.gen,
+                )
+                * sigma
+            )
             # Update learning rate (lr)
-            if index_rep+1 != numReps:
-                t_lr = lrs[index_rep+1]  # for the next step
+            if index_rep + 1 != numReps:
+                t_lr = lrs[index_rep + 1]  # for the next step
             currentLatentVector = currentLatentVector + gauss_noise
             # Langevin steps are numbered after the SGD phase so both phases
             # share one step axis in the probe output.
@@ -709,16 +884,16 @@ class imageRecon():
             loss_CLIP_np = loss_CLIP.detach().cpu().numpy()
 
             # Plot the results.
-            if (index_rep+1) % self.disp_every == 0:
+            if (index_rep + 1) % self.disp_every == 0:
                 recImg = get_recImg(
-                    self.VQGANmodel, currentLatentVector, DEVICE=self.DEVICE)
-                yield recImg, index_rep+1, loss_VGG_np, loss_CLIP_np, None
+                    self.VQGANmodel, currentLatentVector, DEVICE=self.DEVICE
+                )
+                yield recImg, index_rep + 1, loss_VGG_np, loss_CLIP_np, None
 
         # Output the results and finish.
-        recImg = get_recImg(
-            self.VQGANmodel, currentLatentVector, DEVICE=self.DEVICE)
+        recImg = get_recImg(self.VQGANmodel, currentLatentVector, DEVICE=self.DEVICE)
 
         if returnVec:
-            yield recImg, index_rep+1, loss_VGG_np, loss_CLIP_np, currentLatentVector
+            yield recImg, index_rep + 1, loss_VGG_np, loss_CLIP_np, currentLatentVector
         else:
-            yield recImg, index_rep+1, loss_VGG_np, loss_CLIP_np, None
+            yield recImg, index_rep + 1, loss_VGG_np, loss_CLIP_np, None

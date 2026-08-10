@@ -8,10 +8,11 @@ coordinate-averaged autocorrelation (E).
 from __future__ import annotations
 
 import argparse
+import pickle
 from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
-import pickle
 
 from repro_mental_image_recon.figures.assets import (
     ensure_directory,
@@ -153,8 +154,12 @@ def export_sampling_analysis(recon_root: Path, output_dir: Path) -> Path:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--recon-root", type=Path, default=RECON_ROOT,
-                        help="root of the seed-free repeat runs")
+    parser.add_argument(
+        "--recon-root",
+        type=Path,
+        default=RECON_ROOT,
+        help="root of the seed-free repeat runs",
+    )
     parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR)
     args = parser.parse_args()
     saved = export_sampling_analysis(args.recon_root, ensure_directory(args.output_dir))

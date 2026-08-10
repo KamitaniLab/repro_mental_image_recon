@@ -9,8 +9,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from repro_mental_image_recon.figures.drawing import GroupImageDrawer
-
 from repro_mental_image_recon.figures.assets import (
     SOURCE_IMAGE_NAMES,
     SUBJECTS,
@@ -19,6 +17,7 @@ from repro_mental_image_recon.figures.assets import (
     load_target_images,
     project_root,
 )
+from repro_mental_image_recon.figures.drawing import GroupImageDrawer
 
 # Directories
 PROJECT_ROOT = project_root()

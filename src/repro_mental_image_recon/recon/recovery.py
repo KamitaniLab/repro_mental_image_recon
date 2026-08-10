@@ -21,9 +21,8 @@ Used by ``scripts/experiments/recovery_matrix_invert.py`` (single run) and
 """
 
 import numpy as np
-import torch
-
 import recon_func  # createCrops, convert*, set_initInput, get_recImg
+import torch
 
 SEED = 42
 
@@ -35,20 +34,31 @@ np.random.seed(SEED)
 torch.backends.cudnn.deterministic = True
 
 # original_all procedure params (config_recon.yaml)
-N_WO = 1000          # withoutLangevin (Adam) reps
+N_WO = 1000  # withoutLangevin (Adam) reps
 LR_WO = 0.5
-N_LANG = 500         # Langevin (SGLD) reps
+N_LANG = 500  # Langevin (SGLD) reps
 LR_GAMMA, LR_A, LR_B, T_LANG = 0.055, 0.00015, 0.15, 1e-6
 NUM_CROP = 32
 
 VGG_LAYER_IDX = [2, 7, 16, 25, 34]  # 5 conv blocks (post-ReLU)
-CLIP_COEF_VGGCLIP = 0.25            # original_all
-ALEX_RAND_SEED = 1234              # fixed seed so random-weight AlexNet is identical in invert & eval
+CLIP_COEF_VGGCLIP = 0.25  # original_all
+ALEX_RAND_SEED = (
+    1234  # fixed seed so random-weight AlexNet is identical in invert & eval
+)
 
 OPT_SPACES = (
-    "clip_vitb16", "clip_vitb32", "clip_rn50", "openclip_laion",
-    "clip_rn50_layer1", "clip_rn50_layer2", "clip_rn50_layer3", "clip_rn50_layer4",
-    "alexnet_conv2", "alexnet_conv5", "alexnet_rand_conv2", "alexnet_rand_conv5",
+    "clip_vitb16",
+    "clip_vitb32",
+    "clip_rn50",
+    "openclip_laion",
+    "clip_rn50_layer1",
+    "clip_rn50_layer2",
+    "clip_rn50_layer3",
+    "clip_rn50_layer4",
+    "alexnet_conv2",
+    "alexnet_conv5",
+    "alexnet_rand_conv2",
+    "alexnet_rand_conv5",
     "vgg_clip",
 )
 
@@ -62,8 +72,15 @@ def centered_cos_loss(feat, target):
 
 def _imagenet_prep(device):
     from torchvision import transforms
-    return transforms.Compose([transforms.Resize(224), transforms.CenterCrop(224), transforms.ToTensor(),
-                               transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+
+    return transforms.Compose(
+        [
+            transforms.Resize(224),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        ]
+    )
 
 
 def build_space(opt_space, device, no_crop=False):
@@ -75,11 +92,18 @@ def build_space(opt_space, device, no_crop=False):
     if opt_space in ("clip_vitb16", "clip_vitb32", "clip_rn50", "openclip_laion"):
         if opt_space == "openclip_laion":
             import open_clip
+
             model, _, preprocess = open_clip.create_model_and_transforms(
-                "ViT-B-32", pretrained="laion2b_s34b_b79k", device=device)
+                "ViT-B-32", pretrained="laion2b_s34b_b79k", device=device
+            )
         else:
             import clip
-            name = {"clip_vitb16": "ViT-B/16", "clip_vitb32": "ViT-B/32", "clip_rn50": "RN50"}[opt_space]
+
+            name = {
+                "clip_vitb16": "ViT-B/16",
+                "clip_vitb32": "ViT-B/32",
+                "clip_rn50": "RN50",
+            }[opt_space]
             model, preprocess = clip.load(name, jit=False, device=device)
         model.eval()
 
@@ -96,28 +120,52 @@ def build_space(opt_space, device, no_crop=False):
         def target_from_pil(pil):
             with torch.no_grad():
                 return enc(preprocess(pil).unsqueeze(0).to(device)).float()
+
         return loss_fn, target_from_pil
 
     if opt_space in ("alexnet_conv2", "alexnet_conv5"):
         import torchvision
+
         sl = 5 if opt_space == "alexnet_conv2" else 12
-        model = torchvision.models.alexnet(weights=torchvision.models.AlexNet_Weights.IMAGENET1K_V1).eval().to(device)
+        model = (
+            torchvision.models.alexnet(
+                weights=torchvision.models.AlexNet_Weights.IMAGENET1K_V1
+            )
+            .eval()
+            .to(device)
+        )
         prep = _imagenet_prep(device)
 
         def loss_fn(out, target):
             img = recon_func.convertVQGANoutputIntoVGGinput(out)
-            return centered_cos_loss(model.features[:sl](img).reshape(1, -1).float(), target)
+            return centered_cos_loss(
+                model.features[:sl](img).reshape(1, -1).float(), target
+            )
 
         def target_from_pil(pil):
             with torch.no_grad():
-                return model.features[:sl](prep(pil.convert("RGB")).unsqueeze(0).to(device)).reshape(1, -1).float()
+                return (
+                    model.features[:sl](
+                        prep(pil.convert("RGB")).unsqueeze(0).to(device)
+                    )
+                    .reshape(1, -1)
+                    .float()
+                )
+
         return loss_fn, target_from_pil
 
     if opt_space == "vgg_clip":
         # original_all: VGG19 (5 conv layers, layer-averaged corr) + CLIP ViT-B/32 (clip_coef 0.25)
-        import torchvision
         import clip
-        vgg = torchvision.models.vgg19(weights=torchvision.models.VGG19_Weights.IMAGENET1K_V1).eval().to(device)
+        import torchvision
+
+        vgg = (
+            torchvision.models.vgg19(
+                weights=torchvision.models.VGG19_Weights.IMAGENET1K_V1
+            )
+            .eval()
+            .to(device)
+        )
         cmodel, cprep = clip.load("ViT-B/32", jit=False, device=device)
         cmodel.eval()
         prep = _imagenet_prep(device)
@@ -134,8 +182,9 @@ def build_space(opt_space, device, no_crop=False):
             vgg_t, clip_t = target
             vimg = recon_func.convertVQGANoutputIntoVGGinput(out)
             vf = vgg_feats(vimg)
-            vgg_loss = sum(centered_cos_loss(vf[i], vgg_t[i])
-                           for i in range(len(VGG_LAYER_IDX))) / len(VGG_LAYER_IDX)
+            vgg_loss = sum(
+                centered_cos_loss(vf[i], vgg_t[i]) for i in range(len(VGG_LAYER_IDX))
+            ) / len(VGG_LAYER_IDX)
             cimg = recon_func.convertVQGANoutputIntoCLIPinput(out)
             crops = recon_func.createCrops(cimg, NUM_CROP, DEVICE=device)
             clip_loss = centered_cos_loss(cmodel.encode_image(crops).float(), clip_t)
@@ -147,19 +196,25 @@ def build_space(opt_space, device, no_crop=False):
                 vgg_t = vgg_feats(vimg)
                 clip_t = cmodel.encode_image(cprep(pil).unsqueeze(0).to(device)).float()
             return (vgg_t, clip_t)
+
         return loss_fn, target_from_pil
 
     if opt_space.startswith("clip_rn50_layer"):
         # OpenAI CLIP RN50 visual, intermediate residual-stage output (single image, no crop)
         import clip
+
         model, preprocess = clip.load("RN50", jit=False, device=device)
         model.eval()
-        block = getattr(model.visual, opt_space.split("clip_rn50_")[1])  # layer1..layer4
+        block = getattr(
+            model.visual, opt_space.split("clip_rn50_")[1]
+        )  # layer1..layer4
         _cap = {}
         block.register_forward_hook(lambda m, i, o: _cap.__setitem__("f", o))
 
         def extract(x):
-            model.encode_image(x)  # runs full visual forward, hook captures the block output
+            model.encode_image(
+                x
+            )  # runs full visual forward, hook captures the block output
             return _cap["f"].reshape(1, -1).float()
 
         def loss_fn(out, target):
@@ -169,11 +224,13 @@ def build_space(opt_space, device, no_crop=False):
         def target_from_pil(pil):
             with torch.no_grad():
                 return extract(preprocess(pil).unsqueeze(0).to(device))
+
         return loss_fn, target_from_pil
 
     if opt_space in ("alexnet_rand_conv2", "alexnet_rand_conv5"):
         # AlexNet with RANDOM (untrained) weights; fixed seed -> identical net in invert & eval
         import torchvision
+
         sl = 5 if opt_space == "alexnet_rand_conv2" else 12
         torch.manual_seed(ALEX_RAND_SEED)
         model = torchvision.models.alexnet(weights=None).eval().to(device)
@@ -181,22 +238,44 @@ def build_space(opt_space, device, no_crop=False):
 
         def loss_fn(out, target):
             img = recon_func.convertVQGANoutputIntoVGGinput(out)
-            return centered_cos_loss(model.features[:sl](img).reshape(1, -1).float(), target)
+            return centered_cos_loss(
+                model.features[:sl](img).reshape(1, -1).float(), target
+            )
 
         def target_from_pil(pil):
             with torch.no_grad():
-                return model.features[:sl](prep(pil.convert("RGB")).unsqueeze(0).to(device)).reshape(1, -1).float()
+                return (
+                    model.features[:sl](
+                        prep(pil.convert("RGB")).unsqueeze(0).to(device)
+                    )
+                    .reshape(1, -1)
+                    .float()
+                )
+
         return loss_fn, target_from_pil
 
     raise ValueError(opt_space)
 
 
-def invert_one(vqgan, loss_fn, target, init_img, device, n_wo=N_WO, n_lang=N_LANG,
-               optimizer="Adam", lr_wo=LR_WO, clamp=True):
+def invert_one(
+    vqgan,
+    loss_fn,
+    target,
+    init_img,
+    device,
+    n_wo=N_WO,
+    n_lang=N_LANG,
+    optimizer="Adam",
+    lr_wo=LR_WO,
+    clamp=True,
+):
     # ---- withoutLangevin (Adam/AdamW) ----
     z = recon_func.set_initInput(init_img, "PIL", vqgan, DEVICE=device)
-    op = (torch.optim.AdamW([z], lr=lr_wo) if optimizer == "AdamW"
-          else torch.optim.Adam([z], lr=lr_wo))
+    op = (
+        torch.optim.AdamW([z], lr=lr_wo)
+        if optimizer == "AdamW"
+        else torch.optim.Adam([z], lr=lr_wo)
+    )
     for _ in range(n_wo):
         out = vqgan.decode(z)
         if clamp:

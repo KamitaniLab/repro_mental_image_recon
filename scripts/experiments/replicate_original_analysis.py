@@ -1,15 +1,14 @@
 import argparse
+import os
+import pickle
+
+import numpy as np
+import recon_func as recon_func
+import scipy
+import torch
 import yaml
 from PIL import Image
-import numpy as np
-import torch
-import pickle
-import scipy
-import os
-
-from recon_utils import get_target_label, convert_featname
-import recon_func as recon_func
-
+from recon_utils import convert_featname, get_target_label
 
 RESULT_ROOT = "./results/rep_recon_image_koide-majima"
 
@@ -255,7 +254,7 @@ def main(reconMethod="original_all", save_base_dir=f"{RESULT_ROOT}/original_all"
                 # save the results
                 save_wo_lang_dir = f"{save_dir}/wo_lang/"
                 os.makedirs(save_wo_lang_dir, exist_ok=True)
-                image_label = "Img{:04d}".format(tid + 1)
+                image_label = f"Img{tid + 1:04d}"
                 save_file_name = (
                     f"{save_wo_lang_dir}/recon_img_normalized-{image_label}.jpg"
                 )
@@ -306,7 +305,7 @@ def main(reconMethod="original_all", save_base_dir=f"{RESULT_ROOT}/original_all"
             with open(save_file_name, "wb") as f:
                 pickle.dump(save_dict, f)
             # save images
-            image_label = "Img{:04d}".format(tid + 1)
+            image_label = f"Img{tid + 1:04d}"
             save_name = f"{save_dir}/recon_img_normalized-{image_label}.jpg"
             recImg.save(save_name)
 

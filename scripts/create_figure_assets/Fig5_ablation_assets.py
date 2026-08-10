@@ -7,12 +7,12 @@ D and E are the stacked identification proportions over four and two conditions.
 from __future__ import annotations
 
 import argparse
+import pickle
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pickle
 
 from repro_mental_image_recon.figures.assets import (
     ensure_directory,
@@ -82,7 +82,9 @@ def export_random_comparison_panel(recon_root: Path, output_dir: Path) -> None:
     conditions = [{"title": "Target", "images": target_images}]
 
     for label, condition_key in COMPARISON_CONDITIONS.items():
-        recon_images = load_recon_images(_recon_dir(recon_root, condition_key), image_names)
+        recon_images = load_recon_images(
+            _recon_dir(recon_root, condition_key), image_names
+        )
         conditions.append({"title": label, "images": recon_images})
 
     drawer = GroupImageDrawer(
@@ -95,7 +97,9 @@ def export_random_comparison_panel(recon_root: Path, output_dir: Path) -> None:
     panel.save(output_dir / f"Fig5B_{SUBJECT_ID}_recon_image_random.pdf")
 
 
-def _load_preference_summary(prefix: str, recon_root: Path) -> dict[str, dict[str, np.ndarray]]:
+def _load_preference_summary(
+    prefix: str, recon_root: Path
+) -> dict[str, dict[str, np.ndarray]]:
     summary: dict[str, dict[str, np.ndarray]] = {}
     for model in PREFERENCE_MODELS:
         result_path = (
@@ -203,9 +207,13 @@ def export_preference_analyses(recon_root: Path, output_dir: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--recon-root", type=Path, default=RECON_ROOT,
-                        help="directory holding <condition>/<subject>/VC reconstructions "
-                             "and the preference pickles")
+    parser.add_argument(
+        "--recon-root",
+        type=Path,
+        default=RECON_ROOT,
+        help="directory holding <condition>/<subject>/VC reconstructions "
+        "and the preference pickles",
+    )
     parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR)
     args = parser.parse_args()
     output_dir = ensure_directory(args.output_dir)

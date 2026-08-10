@@ -33,8 +33,16 @@ CLUSTER_COLORS = ["#5e35b1", "#e07b39", "#2e9e6f", "#8d6e63", "#d81b60", "#546e7
 # --- parameter-type ordering (for the OAT sweep, which varies one knob at a time) ---
 _FIELD_RE = re.compile(
     r"lr_a(?P<lr_a>[\d.e+-]+)_lr_b(?P<lr_b>[\d.e+-]+)_g(?P<g>[\d.e+-]+)"
-    r"_T(?P<T>[\d.e+-]+)_woL(?P<woL>\d+)_wL(?P<wL>\d+)_nR")
-REF_FIELDS = {"lr_a": 0.00015, "lr_b": 0.15, "g": 0.055, "T": 1e-06, "woL": 1000, "wL": 500}
+    r"_T(?P<T>[\d.e+-]+)_woL(?P<woL>\d+)_wL(?P<wL>\d+)_nR"
+)
+REF_FIELDS = {
+    "lr_a": 0.00015,
+    "lr_b": 0.15,
+    "g": 0.055,
+    "T": 1e-06,
+    "woL": 1000,
+    "wL": 500,
+}
 
 
 def parse_fields(tag: str) -> dict[str, float] | None:
@@ -47,8 +55,11 @@ def classify_condition(tag: str) -> tuple[str, float]:
     f = parse_fields(tag)
     if f is None:
         return "multi", 0.0
-    diffs = [k for k, ref in REF_FIELDS.items()
-             if abs(f[k] - ref) > 1e-12 * max(1.0, abs(ref))]
+    diffs = [
+        k
+        for k, ref in REF_FIELDS.items()
+        if abs(f[k] - ref) > 1e-12 * max(1.0, abs(ref))
+    ]
     if not diffs:
         return "reference", 0.0
     if len(diffs) > 1:
@@ -69,8 +80,12 @@ def short_label(tag: str, reference: str) -> str:
 # Langevin and the Adam phase respectively (recon.func_mod.withoutLangevin
 # optimises with Adam), so they read as step counts, not weights.
 TOKEN_DISPLAY = {
-    "a": r"$\alpha$", "b": "b", "g": r"$\gamma$", "T": "T",
-    "wL": r"$N_\mathrm{SGLD}$", "woL": r"$N_\mathrm{Adam}$",
+    "a": r"$\alpha$",
+    "b": "b",
+    "g": r"$\gamma$",
+    "T": "T",
+    "wL": r"$N_\mathrm{SGLD}$",
+    "woL": r"$N_\mathrm{Adam}$",
 }
 _TOKEN_RE = re.compile(r"^(woL|wL|a|b|g|T)([\d.e+-]+)$")
 REFERENCE_DISPLAY = "KM"
@@ -110,14 +125,16 @@ def load_conditions(matrix_dir: Path) -> dict[str, dict]:
         out[path.stem] = {
             # 75-value profile: the matched distance of every reconstruction.
             "matched": np.concatenate([np.diag(mats[s]) for s in SUBJECTS]),
-            "null": np.concatenate([mats[s][off_mask].reshape(N, N - 1).mean(axis=1)
-                                    for s in SUBJECTS]),
+            "null": np.concatenate(
+                [mats[s][off_mask].reshape(N, N - 1).mean(axis=1) for s in SUBJECTS]
+            ),
             "pixel_sd": sds,
         }
     if not out:
         raise FileNotFoundError(
             f"no .npz in {matrix_dir}\n"
-            "Run: python scripts/experiments/oat_dreamsim_matrices.py")
+            "Run: python scripts/experiments/oat_dreamsim_matrices.py"
+        )
     return out
 
 

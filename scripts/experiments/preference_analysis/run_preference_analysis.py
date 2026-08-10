@@ -8,17 +8,16 @@ from __future__ import annotations
 
 import argparse
 import pickle
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Dict, Iterable, List, Mapping
 
 import numpy as np
 import torch
-from PIL import Image
-
 from bdpy.dl.torch.domain import ComposedDomain, image_domain
 from bdpy.recon.torch.modules import build_encoder
-from bdpy.recon.torch.modules.critic import LayerWiseAverageCritic, MSE
+from bdpy.recon.torch.modules.critic import MSE, LayerWiseAverageCritic
 from bdpy.recon.torch.modules.encoder import SimpleEncoder
+from PIL import Image
 
 # SOURCE_IMAGE_NAMES is the canonical target-index -> stimulus-file mapping; import it
 # rather than restating it here. The stimuli themselves come from data/source, the same
@@ -136,7 +135,7 @@ class CLIPEncoder(SimpleEncoder):
         return features
 
 
-def load_stimuli(source_dir: Path) -> List[Image.Image]:
+def load_stimuli(source_dir: Path) -> list[Image.Image]:
     """The 25 targets, repeated once per subject to match the reconstruction order."""
     per_subject = []
     for target_id in TARGET_IDS:
@@ -153,8 +152,8 @@ def _stimulus_label(target_id: int) -> str:
     return f"Img{tid + 1:04d}"
 
 
-def load_recon_images(result_dir: Path, recon_method: str) -> List[Image.Image]:
-    images: List[Image.Image] = []
+def load_recon_images(result_dir: Path, recon_method: str) -> list[Image.Image]:
+    images: list[Image.Image] = []
     for subject in SUBJECTS:
         for target_id in TARGET_IDS:
             image_path = (
@@ -171,7 +170,7 @@ def load_recon_images(result_dir: Path, recon_method: str) -> List[Image.Image]:
 
 def collect_recon_sets(
     result_dir: Path, recon_methods: Iterable[str]
-) -> Dict[str, List[Image.Image]]:
+) -> dict[str, list[Image.Image]]:
     return {method: load_recon_images(result_dir, method) for method in recon_methods}
 
 
@@ -242,7 +241,7 @@ def select_critic(loss_name: str) -> LayerWiseAverageCritic:
     return MSE()
 
 
-def stack_images(images: List[Image.Image], device: torch.device) -> torch.Tensor:
+def stack_images(images: list[Image.Image], device: torch.device) -> torch.Tensor:
     batch = torch.cat(
         [
             torch.from_numpy(np.asarray(image, dtype=np.float32))[None]
@@ -254,12 +253,12 @@ def stack_images(images: List[Image.Image], device: torch.device) -> torch.Tenso
 
 
 def evaluate_feature_metric(
-    recon_sets: Mapping[str, List[Image.Image]],
-    target_images: List[Image.Image],
+    recon_sets: Mapping[str, list[Image.Image]],
+    target_images: list[Image.Image],
     model_name: str,
     loss_name: str,
     device: torch.device,
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     model, encoder_domain, layer_names = prepare_feature_backend(model_name, device)
     pil_domain = image_domain.PILDomainWithExplicitCrop()
     critic = select_critic(loss_name)
@@ -272,7 +271,7 @@ def evaluate_feature_metric(
         for method, images in recon_sets.items()
     }
 
-    similarity_matrices: Dict[str, List[np.ndarray]] = {
+    similarity_matrices: dict[str, list[np.ndarray]] = {
         layer: [] for layer in layer_names
     }
 
@@ -296,11 +295,11 @@ def evaluate_feature_metric(
 
 
 def evaluate_dreamsim_metric(
-    recon_sets: Mapping[str, List[Image.Image]],
-    target_images: List[Image.Image],
+    recon_sets: Mapping[str, list[Image.Image]],
+    target_images: list[Image.Image],
     device: torch.device,
     use_lpips: bool = False,
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     from dreamsim import dreamsim
 
     model, preprocess = dreamsim(pretrained=True, device=device)
@@ -323,7 +322,7 @@ def evaluate_dreamsim_metric(
 
     target_tensor = torch.stack([_prep(image) for image in target_images]).to(device)
 
-    similarity_stacks: List[np.ndarray] = []
+    similarity_stacks: list[np.ndarray] = []
     for method, images in recon_sets.items():
         recon_tensor = torch.stack([_prep(image) for image in images]).to(device)
         with torch.no_grad():
@@ -344,7 +343,7 @@ def evaluate_dreamsim_metric(
 
 def preference_from_similarity(
     matrices: Mapping[str, np.ndarray],
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     return {layer: np.argmax(matrix, axis=1) for layer, matrix in matrices.items()}
 
 

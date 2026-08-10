@@ -17,6 +17,7 @@ Reads the per-condition DreamSim matrices produced by
 
     python scripts/create_figure_assets/Fig_oat_slice_summary.py
 """
+
 from __future__ import annotations
 
 import argparse
@@ -29,7 +30,7 @@ import pandas as pd
 from matplotlib.patches import Patch
 
 from repro_mental_image_recon.figures.assets import ensure_directory, project_root
-from repro_mental_image_recon.figures.oat import N, REFERENCE_TAG
+from repro_mental_image_recon.figures.oat import REFERENCE_TAG, N
 
 PROJECT_ROOT = project_root()
 DEFAULT_OAT_DIR = PROJECT_ROOT / "results" / "oat_sampling_params" / "dreamsim_matrices"
@@ -43,7 +44,8 @@ REF_LR_A, REF_T = 0.00015, 1e-06
 # searches. Kept local for that reason.
 FIELD_RE = re.compile(
     r"lr_a(?P<lr_a>[\d.e+-]+)_lr_b(?P<lr_b>[\d.e+-]+)_g(?P<g>[\d.e+-]+)"
-    r"_T(?P<T>[\d.e+-]+)_woL(?P<woL>\d+)_wL(?P<wL>\d+)_")
+    r"_T(?P<T>[\d.e+-]+)_woL(?P<woL>\d+)_wL(?P<wL>\d+)_"
+)
 
 # Human-readable name + reference value for the non-(lr_a, T) OAT knobs.
 OTHER_PARAMS = {
@@ -67,8 +69,9 @@ def gap_of(path: Path) -> tuple[float, float, float]:
     with np.load(path) as h:
         subs = [k[2:] for k in h.files if k.startswith("M_")]
         matched = np.concatenate([np.diag(h[f"M_{s}"]) for s in subs])
-        null = np.concatenate([h[f"M_{s}"][off_mask].reshape(N, N - 1).mean(axis=1)
-                               for s in subs])
+        null = np.concatenate(
+            [h[f"M_{s}"][off_mask].reshape(N, N - 1).mean(axis=1) for s in subs]
+        )
         sd = np.concatenate([h[f"pixel_sd_{s}"] for s in subs])
     gap = null - matched
     return gap.mean(), gap.std(ddof=1) / np.sqrt(gap.size), sd.mean()
@@ -88,7 +91,9 @@ def main() -> None:
     oat = load_dir(args.oat_dir)
     slc = load_dir(args.slice_dir)
     if not oat or not slc:
-        raise FileNotFoundError("missing matrices; run oat_dreamsim_matrices.py for both runs")
+        raise FileNotFoundError(
+            "missing matrices; run oat_dreamsim_matrices.py for both runs"
+        )
 
     # --- assemble the lr_a x T plane from the slice (falling back to OAT) ---
     lr_a_vals = sorted({parse_fields(t)["lr_a"] for t in slc})
@@ -99,7 +104,13 @@ def main() -> None:
     for tag, (g, _, sd) in {**oat, **slc}.items():
         f = parse_fields(tag)
         # only the pure lr_a/T variations belong on the plane
-        if f is None or f["lr_b"] != 0.15 or f["g"] != 0.055 or f["woL"] != 1000 or f["wL"] != 500:
+        if (
+            f is None
+            or f["lr_b"] != 0.15
+            or f["g"] != 0.055
+            or f["woL"] != 1000
+            or f["wL"] != 500
+        ):
             continue
         if f["lr_a"] not in lr_a_vals or f["T"] not in t_vals:
             continue
@@ -122,8 +133,11 @@ def main() -> None:
         f = parse_fields(tag)
         if f is None:
             continue
-        diffs = {k for k in ("lr_b", "g", "wL", "woL")
-                 if f[k] != {"lr_b": 0.15, "g": 0.055, "wL": 500, "woL": 1000}[k]}
+        diffs = {
+            k
+            for k in ("lr_b", "g", "wL", "woL")
+            if f[k] != {"lr_b": 0.15, "g": 0.055, "wL": 500, "woL": 1000}[k]
+        }
         # skip reference and lr_a/T variations (those are the plane)
         if len(diffs) != 1 or f["lr_a"] != REF_LR_A or f["T"] != REF_T:
             continue
@@ -134,24 +148,36 @@ def main() -> None:
 
     # ------------------------------------------------------------------ plot
     fig = plt.figure(figsize=(15.5, 6.0))
-    gs = fig.add_gridspec(1, 2, width_ratios=[1.15, 1.0], wspace=0.42,
-                          left=0.07, right=0.975, top=0.83, bottom=0.14)
+    gs = fig.add_gridspec(
+        1,
+        2,
+        width_ratios=[1.15, 1.0],
+        wspace=0.42,
+        left=0.07,
+        right=0.975,
+        top=0.83,
+        bottom=0.14,
+    )
 
     # --- A: lr_a x T plane ---
     ax = fig.add_subplot(gs[0, 0])
     # rows top->bottom = large lr_a -> small; flip for display
     disp = gap_grid[::-1]
-    im = ax.imshow(disp, cmap="Blues", vmin=0, vmax=np.nanmax(gap_grid),
-                   interpolation="nearest")
+    im = ax.imshow(
+        disp, cmap="Blues", vmin=0, vmax=np.nanmax(gap_grid), interpolation="nearest"
+    )
     ax.set_xticks(range(len(t_vals)))
     ax.set_xticklabels([f"{v:g}" for v in t_vals], fontsize=9)
     ax.set_yticks(range(len(lr_a_vals)))
     ax.set_yticklabels([f"{v:g}" for v in lr_a_vals[::-1]], fontsize=9)
     ax.set_xlabel("T (temperature)", fontsize=10)
     ax.set_ylabel("lr_a (step-size scale)", fontsize=10)
-    ax.set_title("A  lr_a x T plane: DreamSim gap (null - matched)\n"
-                 f"hatched = OAT (the cross); interior = slice; reference={ref_slice:.3f}",
-                 loc="left", fontsize=10.5)
+    ax.set_title(
+        "A  lr_a x T plane: DreamSim gap (null - matched)\n"
+        f"hatched = OAT (the cross); interior = slice; reference={ref_slice:.3f}",
+        loc="left",
+        fontsize=10.5,
+    )
     thr = np.nanmax(gap_grid) * 0.6
     for i in range(len(lr_a_vals)):
         di = len(lr_a_vals) - 1 - i  # display row
@@ -159,33 +185,86 @@ def main() -> None:
             v = gap_grid[i, j]
             if not np.isfinite(v):
                 continue
-            ax.text(j, di, f"{v:.3f}", ha="center", va="center", fontsize=8,
-                    color="white" if v > thr else "#22252a")
+            ax.text(
+                j,
+                di,
+                f"{v:.3f}",
+                ha="center",
+                va="center",
+                fontsize=8,
+                color="white" if v > thr else "#22252a",
+            )
             if oat_covered[i, j]:
-                ax.add_patch(plt.Rectangle((j - 0.5, di - 0.5), 1, 1, fill=False,
-                                           hatch="////", edgecolor="#4a4f57", lw=0.0))
+                ax.add_patch(
+                    plt.Rectangle(
+                        (j - 0.5, di - 0.5),
+                        1,
+                        1,
+                        fill=False,
+                        hatch="////",
+                        edgecolor="#4a4f57",
+                        lw=0.0,
+                    )
+                )
             if lr_a_vals[i] == REF_LR_A and t_vals[j] == REF_T:
-                ax.add_patch(plt.Rectangle((j - 0.5, di - 0.5), 1, 1, fill=False,
-                                           edgecolor="#c2405a", lw=2.6))
+                ax.add_patch(
+                    plt.Rectangle(
+                        (j - 0.5, di - 0.5),
+                        1,
+                        1,
+                        fill=False,
+                        edgecolor="#c2405a",
+                        lw=2.6,
+                    )
+                )
     fig.colorbar(im, ax=ax, fraction=0.046, pad=0.02, label="distance gap")
-    ax.legend(handles=[
-        Patch(facecolor="white", edgecolor="#4a4f57", hatch="////", label="OAT-tested"),
-        Patch(facecolor="none", edgecolor="#c2405a", lw=2.6, label="reference"),
-    ], loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=2, frameon=False, fontsize=9)
+    ax.legend(
+        handles=[
+            Patch(
+                facecolor="white", edgecolor="#4a4f57", hatch="////", label="OAT-tested"
+            ),
+            Patch(facecolor="none", edgecolor="#c2405a", lw=2.6, label="reference"),
+        ],
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.16),
+        ncol=2,
+        frameon=False,
+        fontsize=9,
+    )
 
     # --- B: the other OAT knobs ---
     ax = fig.add_subplot(gs[0, 1])
-    ax.axvspan(ref_lo, ref_hi, color="#c2405a", alpha=0.15, zorder=0,
-               label=f"reference band ({ref_lo:.3f}-{ref_hi:.3f}, both runs)")
-    param_colors = {"lr_b": "#3b6fd4", "lr_gamma": "#e07b39",
-                    "numReps_withLangevin": "#2f9e6f", "numReps_withoutLangevin": "#a154c4"}
+    ax.axvspan(
+        ref_lo,
+        ref_hi,
+        color="#c2405a",
+        alpha=0.15,
+        zorder=0,
+        label=f"reference band ({ref_lo:.3f}-{ref_hi:.3f}, both runs)",
+    )
+    param_colors = {
+        "lr_b": "#3b6fd4",
+        "lr_gamma": "#e07b39",
+        "numReps_withLangevin": "#2f9e6f",
+        "numReps_withoutLangevin": "#a154c4",
+    }
     ypos, ylabels = [], []
     y = 0
     for name in ["lr_b", "lr_gamma", "numReps_withLangevin", "numReps_withoutLangevin"]:
         sub = other[other.param == name]
         for _, r in sub.iterrows():
-            ax.errorbar(r["gap"], y, xerr=r["sem"], fmt="o", ms=7, color=param_colors[name],
-                        ecolor="#4a4f57", lw=1.1, capsize=2.5, zorder=2)
+            ax.errorbar(
+                r["gap"],
+                y,
+                xerr=r["sem"],
+                fmt="o",
+                ms=7,
+                color=param_colors[name],
+                ecolor="#4a4f57",
+                lw=1.1,
+                capsize=2.5,
+                zorder=2,
+            )
             ylabels.append(f"{name}={r['value']:g}")
             ypos.append(y)
             y += 1
@@ -194,8 +273,11 @@ def main() -> None:
     ax.set_yticklabels(ylabels, fontsize=8.5)
     ax.set_ylim(y - 0.4, -0.8)
     ax.set_xlabel("DreamSim gap (null - matched)", fontsize=10)
-    ax.set_title("B  Every other OAT knob\n(all sit at the reference; woL=0 = chance)",
-                 loc="left", fontsize=10.5)
+    ax.set_title(
+        "B  Every other OAT knob\n(all sit at the reference; woL=0 = chance)",
+        loc="left",
+        fontsize=10.5,
+    )
     ax.spines[["top", "right"]].set_visible(False)
     ax.grid(axis="x", color="#e2e5e9", lw=0.6)
     ax.set_axisbelow(True)
@@ -206,7 +288,10 @@ def main() -> None:
         "Sampling parameters do not improve reconstruction "
         f"(best cell gap {gap_grid[best_i, best_j]:.3f} at lr_a={lr_a_vals[best_i]:g}, "
         f"T={t_vals[best_j]:g}; reference {ref_lo:.3f}-{ref_hi:.3f} across two runs = noise floor)",
-        fontsize=11.5, x=0.07, ha="left")
+        fontsize=11.5,
+        x=0.07,
+        ha="left",
+    )
 
     ensure_directory(args.out.parent)
     for ext in ("png", "pdf"):
@@ -215,10 +300,19 @@ def main() -> None:
 
     # tidy CSV of the plane
     plane = pd.DataFrame(
-        [{"lr_a": lr_a_vals[i], "T": t_vals[j], "gap": gap_grid[i, j],
-          "pixel_sd": sd_grid[i, j], "oat_tested": bool(oat_covered[i, j])}
-         for i in range(len(lr_a_vals)) for j in range(len(t_vals))
-         if np.isfinite(gap_grid[i, j])])
+        [
+            {
+                "lr_a": lr_a_vals[i],
+                "T": t_vals[j],
+                "gap": gap_grid[i, j],
+                "pixel_sd": sd_grid[i, j],
+                "oat_tested": bool(oat_covered[i, j]),
+            }
+            for i in range(len(lr_a_vals))
+            for j in range(len(t_vals))
+            if np.isfinite(gap_grid[i, j])
+        ]
+    )
     plane.to_csv(f"{args.out}_plane.csv", index=False)
     other.to_csv(f"{args.out}_other_params.csv", index=False)
     print(plane.to_string(index=False))

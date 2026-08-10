@@ -1,14 +1,15 @@
 # %%
 import argparse
+import os
+import pickle
+
+import numpy as np
+import scipy
+import torch
 import yaml
 from PIL import Image
-import numpy as np
-import torch
-import pickle
-import scipy
-import os
+from recon_utils import convert_featname, get_target_label
 
-from recon_utils import get_target_label, convert_featname
 from repro_mental_image_recon.recon import func_mod as recon_func
 
 RESULT_ROOT = "./results/rep_recon_image_koide-majima_recon_variability_no_seed"
@@ -71,7 +72,9 @@ def main(
     subject_list = list(subjects) if subjects else list(DEFAULT_SUBJECTS)
     unknown = [s for s in subject_list if s not in SUBJECT_DIRNAME]
     if unknown:
-        raise ValueError(f"unknown subjects {unknown}; choose from {sorted(SUBJECT_DIRNAME)}")
+        raise ValueError(
+            f"unknown subjects {unknown}; choose from {sorted(SUBJECT_DIRNAME)}"
+        )
     # select from 0 to 24
     # Here are examples:
     # ID 21: 'Bowling ball (artifact)'
@@ -293,7 +296,7 @@ def main(
                     # save the results
                     save_wo_lang_dir = f"{save_dir}/wo_lang/"
                     os.makedirs(save_wo_lang_dir, exist_ok=True)
-                    image_label = "Img{:04d}".format(tid + 1)
+                    image_label = f"Img{tid + 1:04d}"
                     save_file_name = (
                         f"{save_wo_lang_dir}/recon_img_normalized-{image_label}.jpg"
                     )
@@ -368,7 +371,7 @@ def main(
                 with open(save_file_name, "wb") as f:
                     pickle.dump(save_dict, f)
                 # save images
-                image_label = "Img{:04d}".format(tid + 1)
+                image_label = f"Img{tid + 1:04d}"
                 save_name = f"{save_dir}/recon_img_normalized-{image_label}.jpg"
                 recImg.save(save_name)
 

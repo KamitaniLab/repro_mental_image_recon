@@ -7,8 +7,8 @@ notebooks, so the scripts under ``scripts/create_figure_assets/`` stay short.
 from __future__ import annotations
 
 import os
+from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Iterable, Sequence
 
 from PIL import Image
 
@@ -70,7 +70,11 @@ def project_root() -> Path:
     global _PROJECT_ROOT
     if _PROJECT_ROOT is None:
         _PROJECT_ROOT = next(
-            (p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").exists()),
+            (
+                p
+                for p in Path(__file__).resolve().parents
+                if (p / "pyproject.toml").exists()
+            ),
             Path.cwd(),
         )
     return _PROJECT_ROOT

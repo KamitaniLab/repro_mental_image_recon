@@ -6,9 +6,10 @@ A script to download and extract brain decoding feature data (.tar.gz) from Goog
 Based on https://colab.research.google.com/drive/1gaMoae0ntiT94-rQUMymkZboNc-imTzl?usp=drive_link
 """
 
-import gdown
 import tarfile
 from pathlib import Path
+
+import gdown
 
 
 def main():

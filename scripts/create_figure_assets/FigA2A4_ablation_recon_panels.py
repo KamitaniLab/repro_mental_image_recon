@@ -16,15 +16,15 @@ Examples
     python FigA2A4_ablation_recon_panels.py --subjects S2          # single subject
     python FigA2A4_ablation_recon_panels.py --deeprecon-root DIR   # add the reference row
 """
+
 from __future__ import annotations
 
 import argparse
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 from PIL import Image
 
-from repro_mental_image_recon.figures.drawing import GroupImageDrawer
 from repro_mental_image_recon.figures.assets import (
     SOURCE_IMAGE_NAMES,
     SUBJECTS,
@@ -33,6 +33,7 @@ from repro_mental_image_recon.figures.assets import (
     load_target_images,
     project_root,
 )
+from repro_mental_image_recon.figures.drawing import GroupImageDrawer
 
 PROJECT_ROOT = project_root()
 DEFAULT_RECON_ROOT = PROJECT_ROOT / "results" / "rep_recon_image_koide-majima"
@@ -94,7 +95,9 @@ def export_panel(
     conditions = [{"title": "Target", "images": load_target_images(image_names)}]
     for label, condition_key in COMPARISON_CONDITIONS.items():
         recon_dir = recon_root / condition_key / subject / "VC"
-        conditions.append({"title": label, "images": load_recon_images(recon_dir, image_names)})
+        conditions.append(
+            {"title": label, "images": load_recon_images(recon_dir, image_names)}
+        )
 
     if deeprecon_root is not None:
         conditions.append(
@@ -115,7 +118,9 @@ def export_panel(
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument(
         "--subjects",
         nargs="+",
@@ -139,19 +144,21 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=None,
         help="directory holding <subject dir>/VC reference tiff reconstructions. Omitted "
-             "by default: those reconstructions come from a separate repository, so "
-             "the reference row is drawn only when this is given.",
+        "by default: those reconstructions come from a separate repository, so "
+        "the reference row is drawn only when this is given.",
     )
     parser.add_argument(
         "--deeprecon-subject-dirs",
         nargs="+",
         default=None,
         help="subject directory names inside --deeprecon-root, in the same order as "
-             "--subjects (that tree may key subjects differently). Defaults to the "
-             "--subjects ids themselves.",
+        "--subjects (that tree may key subjects differently). Defaults to the "
+        "--subjects ids themselves.",
     )
     args = parser.parse_args()
-    if args.deeprecon_subject_dirs is not None and len(args.deeprecon_subject_dirs) != len(args.subjects):
+    if args.deeprecon_subject_dirs is not None and len(
+        args.deeprecon_subject_dirs
+    ) != len(args.subjects):
         parser.error(
             f"--deeprecon-subject-dirs takes one name per --subjects entry "
             f"({len(args.subjects)} given: {' '.join(args.subjects)})"

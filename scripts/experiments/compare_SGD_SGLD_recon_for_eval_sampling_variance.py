@@ -1,15 +1,16 @@
 # %%
-import random
 import argparse
+import os
+import pickle
+import random
+
+import numpy as np
+import scipy
+import torch
 import yaml
 from PIL import Image
-import numpy as np
-import torch
-import pickle
-import scipy
-import os
+from recon_utils import convert_featname, get_target_label
 
-from recon_utils import get_target_label, convert_featname
 from repro_mental_image_recon.recon import func_mod as recon_func
 
 RESULT_ROOT = (
@@ -273,7 +274,7 @@ def main(reconMethod="original_all", save_base_dir=f"{RESULT_ROOT}/original_all"
                 # save the results
                 save_wo_lang_dir = f"{save_dir}/wo_lang/"
                 os.makedirs(save_wo_lang_dir, exist_ok=True)
-                image_label = "Img{:04d}".format(tid + 1)
+                image_label = f"Img{tid + 1:04d}"
                 save_file_name = (
                     f"{save_wo_lang_dir}/recon_img_normalized-{image_label}.jpg"
                 )
@@ -354,7 +355,7 @@ def main(reconMethod="original_all", save_base_dir=f"{RESULT_ROOT}/original_all"
 
             # %%
             # %%
-            image_label = "Img{:04d}".format(tid + 1)
+            image_label = f"Img{tid + 1:04d}"
             save_file_name = f"{save_dir}/{image_label}.pkl"
 
             def to_np(t):
@@ -415,9 +416,7 @@ def main(reconMethod="original_all", save_base_dir=f"{RESULT_ROOT}/original_all"
                 for recImg_draw, _, _, _, _ in generator_:
                     save_dir_ = f"{save_dir}/sampling_{kk:02}"
                     os.makedirs(save_dir_, exist_ok=True)
-                    save_name = (
-                        f"{save_dir_}/recon_img_normalized-{image_label}.jpg"
-                    )
+                    save_name = f"{save_dir_}/recon_img_normalized-{image_label}.jpg"
                     recImg_draw.save(save_name)
 
 

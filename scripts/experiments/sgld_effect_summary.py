@@ -23,6 +23,7 @@ a comma-separated subset) to pool every repeat for an even larger summary.
 Each run writes a compact ``.npz`` of per-reconstruction summaries that the
 figure script aggregates.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -33,9 +34,7 @@ import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_ROOT = (
-    PROJECT_ROOT
-    / "results"
-    / "rep_recon_image_koide-majima_recon_variability_no_seed"
+    PROJECT_ROOT / "results" / "rep_recon_image_koide-majima_recon_variability_no_seed"
 )
 DEFAULT_OUT_DIR = PROJECT_ROOT / "results" / "sgld_effect_summary"
 
