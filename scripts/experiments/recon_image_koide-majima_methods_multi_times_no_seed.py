@@ -12,8 +12,22 @@ import os
 from recon_utils import get_target_image, convert_featname
 import recon_func_mod_KS as recon_func
 
+RESULT_ROOT = "./results/rep_recon_image_koide-majima_recon_variability_no_seed"
 
-def main(reconMethod="original_all", save_base_dir="./test"):
+# Subject id in the decoded-feature tree -> subject id used in the output tree.
+SUBJECT_DIRNAME = {"S01": "S1", "S02": "S2", "S03": "S3"}
+DEFAULT_SUBJECTS = ("S01", "S02", "S03")
+DEFAULT_TARGET_IDS = tuple(range(25))
+DEFAULT_ITERS = 10
+
+
+def main(
+    reconMethod="original_all",
+    save_base_dir=f"{RESULT_ROOT}/original_all",
+    subjects=None,
+    targets=None,
+    iters=None,
+):
     # load config
     with open("./scripts/config/demo_params.yaml", "rb") as f:
         prm_demo = yaml.safe_load(f)
@@ -56,9 +70,10 @@ def main(reconMethod="original_all", save_base_dir="./test"):
     )
 
     # %%
-    subject_list = ["S01", "S02", "S03"]
-    save_subject_list = ["S1", "S2", "S3"]
-    subject_dict = dict(zip(subject_list, save_subject_list))
+    subject_list = list(subjects) if subjects else list(DEFAULT_SUBJECTS)
+    unknown = [s for s in subject_list if s not in SUBJECT_DIRNAME]
+    if unknown:
+        raise ValueError(f"unknown subjects {unknown}; choose from {sorted(SUBJECT_DIRNAME)}")
     # select from 0 to 24
     # Here are examples:
     # ID 21: 'Bowling ball (artifact)'
@@ -67,7 +82,10 @@ def main(reconMethod="original_all", save_base_dir="./test"):
     # ID 19: 'Goat (animal)'
     # ID  7: 'Blue + (symbol)'
     # ID 14: 'Black x (symbol)'
-    targetID_list = np.arange(25)
+    targetID_list = list(targets) if targets is not None else list(DEFAULT_TARGET_IDS)
+    out_of_range = [t for t in targetID_list if not 0 <= t < len(DEFAULT_TARGET_IDS)]
+    if out_of_range:
+        raise ValueError(f"target ids out of range {out_of_range}; expected 0..24")
 
     # reconMethod = 'original' # select from 'original' (default), 'Langevin', 'withoutLangevin'
 
@@ -94,29 +112,15 @@ def main(reconMethod="original_all", save_base_dir="./test"):
     numReps = dt_cfg["recon_params"][reconMethod]["numReps"]
     similarity = dt_cfg["recon_params"][reconMethod]["similarity"]
 
-    if reconMethod == "Langevin" or reconMethod == "original":
-        lr_gamma = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_gamma"]
-        lr_a = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_a"]
-        lr_b = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_b"]
-        T_langevin = dt_cfg["recon_params"][reconMethod]["Langevin"]["T"]
-    if reconMethod == "Langevin" or reconMethod == "original":
-        lr_gamma = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_gamma"]
-        lr_a = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_a"]
-        lr_b = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_b"]
-        T_langevin = dt_cfg["recon_params"][reconMethod]["Langevin"]["T"]
     try:
-        lr_gamma = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_gamma"]
-        lr_a = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_a"]
-        lr_b = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_b"]
-        T_langevin = dt_cfg["recon_params"][reconMethod]["Langevin"]["T"]
-
-        print(lr_gamma)
-        print(lr_a)
-        print(lr_b)
-        print(T_langevin)
-
+        langevin = dt_cfg["recon_params"][reconMethod]["Langevin"]
+        lr_gamma = langevin["lr_gamma"]
+        lr_a = langevin["lr_a"]
+        lr_b = langevin["lr_b"]
+        T_langevin = langevin["T"]
     except KeyError as e:
         raise ValueError(f"Langevin config does not include: {e}")
+    print(f"Langevin: lr_gamma={lr_gamma} lr_a={lr_a} lr_b={lr_b} T={T_langevin}")
     # set parameters
     numReps_withoutLangevin = dt_cfg["recon_params"][reconMethod][
         "numReps_withoutLangevin"
@@ -125,13 +129,13 @@ def main(reconMethod="original_all", save_base_dir="./test"):
         "numReps_withLangevin"
     ]  # 500 # (default) 500
 
-    iter_num = 10
+    iter_num = DEFAULT_ITERS if iters is None else iters
 
     # %%
-    for j, subject in enumerate(subject_list):
-        for i, targetID in enumerate(targetID_list):
+    for subject in subject_list:
+        for targetID in targetID_list:
             for iter_n in range(iter_num):
-                save_subject = subject_dict[subject]
+                save_subject = SUBJECT_DIRNAME[subject]
                 save_dir = f"{save_base_dir}/{save_subject}/iter{iter_n + 1:02}/VC"
                 os.makedirs(save_dir, exist_ok=True)
                 if targetID > 14:
@@ -140,8 +144,6 @@ def main(reconMethod="original_all", save_base_dir="./test"):
                     tid = targetID
                 # %%
                 targetImg_, targetimname = get_target_image(targetID, targetimpath)
-                recon_name = f"Stim{i + 1:02}_{targetimname}"
-                true_image_dir = "./data/ImageryDeeprecon/source"
                 # VGG
                 list_path_vgg = list()
                 for t_layername in used_layers_VGG:
@@ -385,12 +387,37 @@ if __name__ == "__main__":
         default="original_all",
         choices=["original_all"],
     )
+    # Defaults reproduce the published run (3 subjects x 25 stimuli x 10 repeats);
+    # the flags exist to shard it across GPUs or to redo part of it.
+    parser.add_argument(
+        "--subjects",
+        type=str,
+        nargs="+",
+        default=None,
+        help=f"subjects to run (default: {' '.join(DEFAULT_SUBJECTS)})",
+    )
+    parser.add_argument(
+        "--targets",
+        type=int,
+        nargs="+",
+        default=None,
+        help="target ids 0-24 to run (default: all 25)",
+    )
+    parser.add_argument(
+        "--iters",
+        type=int,
+        default=None,
+        help=f"number of seed-free repeats per reconstruction (default: {DEFAULT_ITERS})",
+    )
     args = parser.parse_args()
-    # the first arugment is the method to use
 
     reconMethod = args.method
-
-    reconMethod = args.method
-    save_base_dir = f"./results/rep_recon_image_koide-majima_recon_variability_no_seed/{reconMethod}"
+    save_base_dir = f"{RESULT_ROOT}/{reconMethod}"
     os.makedirs(save_base_dir, exist_ok=True)
-    main(reconMethod, save_base_dir)
+    main(
+        reconMethod,
+        save_base_dir,
+        subjects=args.subjects,
+        targets=args.targets,
+        iters=args.iters,
+    )

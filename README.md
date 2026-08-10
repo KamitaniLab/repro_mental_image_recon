@@ -52,7 +52,7 @@ All analyses are organized by **analysis unit** (pipeline), each producing one o
 |---|---|---|---|---|---|
 | 1 | Reconstruction generation & representativeness | 2C, A1 | ✅ Yes | `replicate_original_analysis.py original_all` | `Fig2C_assets.py` |
 | 2 | DreamSim distance distribution & pairs | 2D, 2E | ✅ Yes | `recon_distance_distribution.py --recon_root <run>` | `Fig_best_pairs.py`, `recon_distance_examples.py`, `export_dreamsim_matrices_csv.py` |
-| 3 | Run-to-run variability | 3A | ✅ Yes | `recon_image_koide-majima_methods_multi_times_no_seed.py` | `Fig3A_variability_assets.py` |
+| 3 | Run-to-run variability | 3A | ✅ Yes | `recon_image_koide-majima_methods_multi_times_no_seed.py original_all` | `Fig3A_variability_assets.py` |
 | 4 | Published example comparison | 3B | ✅ Yes | (none — CC BY 4.0 adoption from original paper) | (none) |
 | 5 | Circular evaluation / recovery matrix | 4A, 4B | ❌ No | `recovery_matrix_invert_reps.py` + `recovery_check_eval.py` | `Fig_recon_and_identification_errorbar.py` |
 | 6 | SGLD/CLIP ablation | 5A–E, A2–A4 | ✅ Yes | `compare_SGD_SGLD_recon_for_eval_sampling_variance.py` + `run_preference_analysis.py` | `Fig5_ablation_assets.py`, `Fig5_ablation_recon_panels.py`, `scripts/experiments/preference_analysis/preference_stats.py` |
@@ -102,7 +102,7 @@ uv run python scripts/experiments/check_determinism.py --device cuda
 uv run python scripts/experiments/replicate_original_analysis.py original_all
 
 # Run variability analysis (Unit 3)
-uv run python scripts/experiments/recon_image_koide-majima_methods_multi_times_no_seed.py
+uv run python scripts/experiments/recon_image_koide-majima_methods_multi_times_no_seed.py original_all
 
 # Generate all figure assets
 uv run python scripts/create_figure_assets/Fig2C_assets.py
@@ -118,7 +118,7 @@ Each figure in the manuscript can be regenerated from the code. Below are the mi
 | Figure | Requirements | Generate analysis | Results location | Generate figure | Output |
 |--------|---|---|---|---|---|
 | **2D, 2E** | Imagery | `uv run python scripts/experiments/recon_distance_distribution.py --recon_root <run> --method original_all` | `<run>/original_all/distance_summary/` (`distances_{metric}.csv`, `matrices_{metric}.npz`, distribution plots, `summary_*.txt`) | `uv run python scripts/create_figure_assets/Fig_best_pairs.py --csv <run>/original_all/distance_summary/distances_dreamsim.csv --subject S2` | `assets/fig02/` |
-| **3A** | Imagery | `uv run python scripts/experiments/recon_image_koide-majima_methods_multi_times_no_seed.py` | `results/rep_recon_image_koide-majima_recon_variability_no_seed/` | `uv run python scripts/create_figure_assets/Fig3A_variability_assets.py` | `assets/fig03/` |
+| **3A** | Imagery | `uv run python scripts/experiments/recon_image_koide-majima_methods_multi_times_no_seed.py original_all` | `results/rep_recon_image_koide-majima_recon_variability_no_seed/` | `uv run python scripts/create_figure_assets/Fig3A_variability_assets.py` | `assets/fig03/` (one PDF per stimulus) |
 | **3B** | — | (CC BY 4.0 adoption, not regenerable) | — | — | — |
 | **4A, 4B** | (None) | `uv run python scripts/experiments/recovery_matrix_invert_reps.py && uv run python scripts/experiments/recovery_check_eval.py` | `results/recovery_nocrop25_reps/` | `uv run python scripts/create_figure_assets/Fig_recon_and_identification_errorbar.py` | `assets/fig04/` |
 | **5D, 5E** | Imagery | `uv run python scripts/experiments/compare_SGD_SGLD_recon_for_eval_sampling_variance.py && uv run python scripts/experiments/run_preference_analysis.py` | `results/rep_recon_image_koide-majima_comparing_SGD_updated_sampling_parameters/` | `uv run python scripts/experiments/preference_analysis/preference_stats.py` | `results/rep_recon_image_koide-majima/` |
