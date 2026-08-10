@@ -1,6 +1,6 @@
 """Compare two reconstruction runs made with the same seed.
 
-Usage: python compare_runs.py runA_dir runB_dir
+Usage: python scripts/experiments/compare_recon_runs.py runA_dir runB_dir
 Reports, for every matching .pkl, whether the latent vectors are bit-identical
 and (if not) how large the discrepancy is relative to the value scale.
 """

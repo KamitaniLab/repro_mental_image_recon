@@ -39,7 +39,8 @@ DEFAULT_ROOT = (
 )
 DEFAULT_OUT_DIR = PROJECT_ROOT / "results" / "sgld_effect_summary"
 
-# Trace keys holding the SGLD (Langevin) chain, matching Fig5c-e_assets.py.
+# Trace keys holding the SGLD (Langevin) chain, matching
+# Fig6_sgld_effect_diagnostic_assets.py.
 LATENT_KEY = "current_LatentVec_withLangevin_list"
 PIXEL_KEY = "currentImg_withLangevin_list"
 
