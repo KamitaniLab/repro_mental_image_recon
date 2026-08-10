@@ -27,7 +27,7 @@ Run it once on GPU and once with --device cpu: CPU has deterministic kernels for
 these ops, so the pair of results tells the two causes apart.
 
 Everything is written to results/determinism_check/ (inside the repo, so it
-survives a reboot).
+survives a reboot); pass --out-dir to write somewhere else.
 """
 import argparse
 import hashlib
@@ -42,7 +42,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import recon_func_reproducible as R  # noqa: E402
 
-OUT_DIR = os.path.join('results', 'determinism_check')
+DEFAULT_OUT_DIR = os.path.join('results', 'determinism_check')
 
 # Steps at which the latent is recorded. Langevin steps are numbered n_sgd + t
 # so both phases share one axis.
@@ -151,8 +151,8 @@ def build_recon(args, dev):
     w = np.ones(len(vgg_dirs))
     w = w / w.sum()
     return dict(
-        args=([load_dec('VGG19', l) for l in vgg_dirs],
-              [load_mean('VGG19', l) for l in vgg_dirs],
+        args=([load_dec('VGG19', name) for name in vgg_dirs],
+              [load_mean('VGG19', name) for name in vgg_dirs],
               w, VGGmodel_, vgg_in,
               [load_dec(n, clip_layer) for n in names],
               [load_mean(n, clip_layer) for n in names],
@@ -219,6 +219,7 @@ def spawn(mode, out_path, args):
            '--device', args.device, '--seed', str(args.seed),
            '--base-seed', str(args.base_seed), '--steps', str(args.steps),
            '--num-crops', str(args.num_crops), '--subject', args.subject,
+           '--out-dir', args.out_dir,
            '--target', str(args.target), '--method', args.method]
     if args.no_augment:
         cmd.append('--no-augment')
@@ -271,11 +272,12 @@ def compare_recon(a_path, b_path):
 def drive(args):
     dev = pick_device(args.device)
     gpu = torch.cuda.get_device_name(0) if dev.type == 'cuda' else 'cpu'
-    os.makedirs(OUT_DIR, exist_ok=True)
+    out_dir = args.out_dir
+    os.makedirs(out_dir, exist_ok=True)
     tag = dev.type
     print(f'host={os.uname().nodename}  device={dev}  gpu={gpu}  '
           f'torch={torch.__version__}  seed={args.seed}')
-    print(f'output -> {OUT_DIR}/\n')
+    print(f'output -> {out_dir}/\n')
 
     results = {}
 
@@ -290,7 +292,7 @@ def drive(args):
         print(f'    ({note})')
         paths = []
         for i in (1, 2):
-            p = os.path.join(OUT_DIR, f'{tag}_{mode}{i}.npy')
+            p = os.path.join(out_dir, f'{tag}_{mode}{i}.npy')
             spawn(mode, p, args)
             paths.append(p)
         results[mode] = compare_npy(*paths)
@@ -301,12 +303,12 @@ def drive(args):
         print('    (this is the one that matters; images are saved alongside)')
         paths = []
         for i in (1, 2):
-            p = os.path.join(OUT_DIR, f'{tag}_recon{i}.npz')
+            p = os.path.join(out_dir, f'{tag}_recon{i}.npz')
             print(f'  --- run {i}/2 ---', flush=True)
             spawn('recon', p, args)
             paths.append(p)
         results['recon'] = compare_recon(*paths)
-        print(f'    images: {OUT_DIR}/{tag}_recon1_sgd.png, '
+        print(f'    images: {out_dir}/{tag}_recon1_sgd.png, '
               f'{tag}_recon1_final.png (and _recon2_)')
         print()
 
@@ -329,7 +331,9 @@ def main():
     p.add_argument('--seed', type=int, default=2956797496,
                    help='generator seed (default: the S01/target18/iter1 run seed)')
     p.add_argument('--base-seed', type=int, default=42)
-    p.add_argument('--steps', type=int, default=3)
+    p.add_argument('--steps', type=int, default=2,
+                   help='successive createCrops draws recorded per run; the two runs '
+                        'are compared over this whole sequence')
     p.add_argument('--num-crops', type=int, default=32)
     p.add_argument('--no-augment', action='store_true')
     p.add_argument('--list-nondet', action='store_true',
@@ -337,6 +341,8 @@ def main():
     p.add_argument('--subject', default='S01')
     p.add_argument('--target', type=int, default=18)
     p.add_argument('--method', default='original_all')
+    p.add_argument('--out-dir', default=DEFAULT_OUT_DIR,
+                   help='where the .npy / .npz / .png outputs go')
     p.add_argument('--n-sgd', type=int, default=None,
                    help='override numReps_withoutLangevin (CPU runs are slow)')
     p.add_argument('--n-lang', type=int, default=None,

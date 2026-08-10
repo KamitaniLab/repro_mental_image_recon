@@ -57,7 +57,7 @@ All analyses are organized by **analysis unit** (pipeline), each producing one o
 | 6 | SGLD/CLIP ablation | 5B, 5D, 5E, A2–A4 | ✅ Yes | `replicate_original_analysis.py` ×4 conditions → `preference_analysis/run_preference_analysis.sh` | `Fig5_ablation_assets.py`, `Fig5_ablation_recon_panels.py`, `preference_analysis/preference_stats.py` |
 | 7 | SGLD sampling effect | 6B–E, A6 | ✅ Yes | Units 1 and 3 outputs → `sgld_effect_summary.py <subject>` | `Fig6_sgld_effect_assets.py`, `Fig6_sgld_effect_diagnostic_assets.py`, `FigA6_sgld_systematic_assets.py` |
 | 8 | SGLD hyperparameter sweep | A5 | ✅ Yes | `run_oat_search_4gpu.sh` (`MODE=oat`, then `MODE=slice`) + `oat_dreamsim_matrices.py` for each | `Fig_oat_composite.py`, `Fig_oat_dreamsim_matrix.py`, `Fig_oat_slice_summary.py` |
-| 9 | CPU/GPU determinism | A7 | ❌ No | `check_determinism.py` + `determinism_sweep.py` | `Fig_determinism_cpu_vs_gpu.py` |
+| 9 | CPU/GPU determinism | A7 | ⚠️ For `--recon` | `check_determinism.py --recon` (once per device) + `determinism_sweep.py` | `Fig_determinism_cpu_vs_gpu.py` |
 
 ### Imagery stimuli setup
 
@@ -122,7 +122,7 @@ Each figure in the manuscript can be regenerated from the code. Below are the mi
 | **6B** | Imagery | (Unit 1 output; `VC/` is post-SGLD and `VC/wo_lang/` pre-SGLD) | `results/rep_recon_image_koide-majima/original_all/` | `uv run python scripts/create_figure_assets/Fig6_sgld_effect_assets.py` | `assets/fig06/` |
 | **6C–E** | Imagery | (Unit 3 output; the pickles hold the 500-step SGLD trajectory) | `results/rep_recon_image_koide-majima_recon_variability_no_seed/` | `uv run python scripts/create_figure_assets/Fig6_sgld_effect_diagnostic_assets.py` | `assets/fig06/` |
 | **A6** | Imagery | `for s in S1 S2 S3; do uv run python scripts/experiments/sgld_effect_summary.py $s; done` (one subject per run — the trajectory pickles are ~670 MB each) | `results/sgld_effect_summary/original_all/{S1,S2,S3}.npz` | `uv run python scripts/create_figure_assets/FigA6_sgld_systematic_assets.py` | `assets/fig06/`; summary table to `results/sgld_effect_summary/original_all/` |
-| **A7** | (None) | `uv run python scripts/experiments/check_determinism.py --recon && uv run python scripts/experiments/determinism_sweep.py` | `results/determinism_check/`, `results/determinism_sweep/` | `uv run python scripts/create_figure_assets/Fig_determinism_cpu_vs_gpu.py` | `assets/figA7/` |
+| **A7** | Imagery | `uv run python scripts/experiments/check_determinism.py --recon --device cpu && uv run python scripts/experiments/check_determinism.py --recon --device cuda && uv run python scripts/experiments/determinism_sweep.py` (the figure needs both devices; the CPU reconstruction is slow — shorten it with `--n-sgd` / `--n-lang`) | `results/determinism_check/`, `results/determinism_sweep/` | `uv run python scripts/create_figure_assets/Fig_determinism_cpu_vs_gpu.py` | `assets/figA7/` |
 
 `<run>` is the reconstruction output root whose `<method>/<subject>/VC/` reconstructions
 are being scored — e.g. `results/rep_recon_image_koide-majima`. Numbers (CSV, `.npz`,

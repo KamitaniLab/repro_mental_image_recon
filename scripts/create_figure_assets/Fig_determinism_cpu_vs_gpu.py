@@ -56,9 +56,9 @@ def load_sweep(path):
     return out or None
 
 
-def load_pair(device, stage):
+def load_pair(device, stage, result_dir):
     """The two runs' output images for one device, as float arrays."""
-    paths = [os.path.join(RESULT_DIR, f'{device}_recon{i}_{stage}.png')
+    paths = [os.path.join(result_dir, f'{device}_recon{i}_{stage}.png')
              for i in (1, 2)]
     for p in paths:
         if not os.path.exists(p):
@@ -73,13 +73,15 @@ def main():
     ap.add_argument('--stage', choices=['final', 'sgd'], default='final',
                     help='final = after SGLD (default); sgd = after Adam')
     ap.add_argument('--devices', nargs='+', default=['cpu', 'cuda'])
+    ap.add_argument('--result-dir', default=RESULT_DIR,
+                    help='check_determinism.py output holding {device}_recon{1,2}_*.png')
     ap.add_argument('--sweep', default=SWEEP_CSV,
                     help='determinism_sweep.py CSV; the right panel shows its '
                          'distribution. Pass "" to fall back to the single pair.')
     ap.add_argument('--out', default=None)
     args = ap.parse_args()
 
-    runs = {d: load_pair(d, args.stage) for d in args.devices}
+    runs = {d: load_pair(d, args.stage, args.result_dir) for d in args.devices}
     diffs = {d: np.abs(runs[d][0] - runs[d][1]) for d in args.devices}
     stats = {d: dict(mean=diffs[d].mean(), max=diffs[d].max(),
                      identical=np.array_equal(runs[d][0], runs[d][1]))

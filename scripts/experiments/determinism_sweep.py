@@ -29,9 +29,6 @@ Usage (from the repo root):
     python scripts/experiments/determinism_sweep.py            # 3 subjects x 25 targets
     python scripts/experiments/determinism_sweep.py --subjects S01
     python scripts/experiments/determinism_sweep.py --device cpu --targets 0 1
-
-The dependency layout (lib/ submodules vs ./mental_img_recon + ./external) is
-detected at startup, so the same command works in either checkout.
 """
 import argparse
 import csv
@@ -47,62 +44,6 @@ sys.path.insert(0, HERE)
 import recon_func_reproducible as R  # noqa: E402
 
 OUT_DIR = os.path.join('results', 'determinism_sweep')
-
-
-def resolve_path(p):
-    """Return `p`, or the same path under whichever dependency layout exists.
-
-    The public checkout keeps mental_img_recon / taming-transformers as
-    submodules under lib/; working copies often have them at the repo root
-    (./mental_img_recon, ./external/taming-transformers). Rather than making the
-    caller pass an overriding config, try the alternatives and use the one that
-    is actually populated.
-    """
-    def populated(path):
-        head = path.split('__')[0]          # stop at the first placeholder
-        probe = head if os.path.exists(head) else os.path.dirname(head)
-        return os.path.exists(probe) and (not os.path.isdir(probe) or os.listdir(probe))
-
-    if populated(p):
-        return p
-    for alt in (p.replace('lib//', '').replace('lib/', ''),
-                p.replace('lib/taming-transformers', 'external/taming-transformers'),
-                p.replace('lib//', 'external/').replace('lib/', 'external/')):
-        if alt != p and populated(alt):
-            return alt
-    return p
-
-
-def resolve_layout(dt_cfg, prm_demo):
-    """Point the config at the dependency layout present on disk."""
-    changed = []
-    for k, v in dt_cfg.get('file_path', {}).items():
-        if isinstance(v, str):
-            nv = resolve_path(v)
-            if nv != v:
-                dt_cfg['file_path'][k] = nv
-                changed.append(f'{k}: {v} -> {nv}')
-    for k in ('dt_targetimages_path', 'decfearture_path', 'truefearture_path'):
-        v = prm_demo.get(k)
-        if isinstance(v, str):
-            nv = resolve_path(v)
-            if nv != v:
-                prm_demo[k] = nv
-                changed.append(f'{k}: {v} -> {nv}')
-    if changed:
-        print('resolved dependency layout:')
-        for c in changed:
-            print(f'  {c}')
-    # recon_utils lives in the mental_img_recon package; add it if not installed.
-    try:
-        import recon_utils  # noqa: F401
-    except ImportError:
-        for cand in ('./mental_img_recon', './lib/mental_img_recon'):
-            if os.path.isdir(cand) and os.listdir(cand):
-                sys.path.append(cand)
-                print(f'  recon_utils from {cand}')
-                break
-    return dt_cfg, prm_demo
 
 
 def load_models(dt_cfg, dev):
@@ -154,8 +95,8 @@ def load_features(dt_cfg, prm_demo, subject, targetID, method, dev):
 
     w = np.ones(len(vgg_dirs))
     return dict(
-        targetVGG=[load_dec('VGG19', l) for l in vgg_dirs],
-        meanVGG=[load_mean('VGG19', l) for l in vgg_dirs],
+        targetVGG=[load_dec('VGG19', name) for name in vgg_dirs],
+        meanVGG=[load_mean('VGG19', name) for name in vgg_dirs],
         vggw=w / w.sum(), vgg_in=vgg_in,
         targetCLIP=[load_dec(n, clip_layer) for n in names],
         meanCLIP=[load_mean(n, clip_layer) for n in names],
@@ -224,8 +165,6 @@ def main():
         prm_demo = yaml.safe_load(f)
     with open('./scripts/config/config_KS_mod.yaml', 'rb') as f:
         dt_cfg = yaml.safe_load(f)
-
-    dt_cfg, prm_demo = resolve_layout(dt_cfg, prm_demo)
 
     n_sgd = (args.n_sgd if args.n_sgd is not None
              else dt_cfg['recon_params'][args.method]['numReps_withoutLangevin'])
@@ -297,7 +236,7 @@ def main():
         for r in csv.DictReader(f):
             vals.append(float(r['mean_abs_diff']))
     v = np.array(vals)
-    print(f'mean|d| over {len(v)} pairs: mean={v.mean():.3f}  sd={v.std(ddof=1):.3f}  '
+    print(f'mean|d| over {len(v)} pairs: mean={v.mean():.3f}  '
           f'min={v.min():.3f}  max={v.max():.3f}  median={np.median(v):.3f}')
 
 
