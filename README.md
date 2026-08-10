@@ -17,21 +17,6 @@ The repository collects scripts to re-run the imagery reconstruction analyses an
 - PyTorch 2.9.0 built against CUDA 12.8 (`cu128` wheels)
 - GPU: GeForce RTX 3090 (24GB)
 
-## Disk
-
-Roughly 8.3 GB is downloaded before anything runs:
-
-| What | Download | On disk | Fetched by |
-|---|---|---|---|
-| Decoded brain features | 1.7 GB | 3.6 GB | `setup_resources.sh` |
-| VQGAN weights + config | 958 MB | 958 MB | `setup_resources.sh` |
-| DreamSim weights | 3.8 GB | 3.8 GB | the `dreamsim` package, on first use |
-| Imagery target stimuli | 7 MB | 7 MB | by request, see step 5 |
-
-`results/` then grows with what you run, and is much larger than the inputs. Analysis 3
-is the extreme: it keeps the full 500-step SGLD trajectory, at ~670 MB per stimulus and
-repetition. Analysis 7's sweep writes 38 conditions × 25 stimuli × 3 subjects.
-
 ## Quick Start
 
 1. **Install `uv`**
@@ -63,10 +48,10 @@ repetition. Analysis 7's sweep writes 38 conditions × 25 stimuli × 3 subjects.
    ```bash
    uv run bash setup_resources.sh
    ```
-   This fetches the decoded fMRI features published with Koide-Majima et al. (2024)
-   and the pretrained VQGAN weights. Both downloads are checked against a sha256 and
-   are skipped if a verified copy is already there, so an interrupted run can simply
-   be repeated. Afterwards:
+   The decoded fMRI features published with Koide-Majima et al. (2024) and the
+   pretrained VQGAN weights: 2.7 GB downloaded, 4.5 GB once extracted. Each file is
+   checked against a sha256 and skipped if a verified copy is already there, so an
+   interrupted run can just be repeated. Afterwards:
 
    ```
    lib/mental_img_recon/content/mental_img_recon/features/
@@ -77,17 +62,10 @@ repetition. Analysis 7's sweep writes 38 conditions × 25 stimuli × 3 subjects.
        configs/model.yaml
    ```
 
-   A third download is **not** part of this script: the `dreamsim` package fetches its
-   own weights (~3.8 GB) into `./models/` the first time an evaluation script calls it,
-   which is why that directory appears without being mentioned anywhere. It is relative
-   to the working directory, so run everything from the repository root and it stays in
-   one place. Analyses 2, 4, 5 and 7 trigger it; the reconstruction itself does not.
-
 5. **Obtain the imagery target stimuli**
 
-   They are excluded from this repository due to copyright, and this is the one step
-   that cannot be completed by downloading: contact kamitanilab@gmail.com for
-   `imageryExpStim.zip`, then:
+   They are excluded from this repository due to copyright. Contact
+   kamitanilab@gmail.com for `imageryExpStim.zip`, then:
    ```bash
    unzip imageryExpStim.zip -d data/
    ```
@@ -140,6 +118,10 @@ selected natural-image targets) and `assets/fig02/FigA1_recon_image_all.pdf` (al
 × 3 subjects).
 
 ### Analysis 2 — distance distribution analysis (Fig 2D, 2E)
+
+The distances are DreamSim, so the first run here downloads its weights (~3.8 GB) into
+`./models/` — as it does for analyses 4, 5 and 7. The path is relative to the working
+directory, another reason to stay at the repository root.
 
 ```bash
 # Fig 2D — matched vs non-target distance distributions, with auc and Mann-Whitney p.
