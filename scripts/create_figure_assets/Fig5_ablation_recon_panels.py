@@ -1,19 +1,20 @@
-"""Generate the ablation reconstruction panels (all-stimuli / selected-stimuli).
+"""Generate the ablation reconstruction panels for Figures A2-A4.
 
-Reproduces the two panel sets that were originally produced by
-``original_jupyter/Fig4_assets.ipynb`` (cells 2 and 4) and shipped as
-``figures/250410_recon_image_koide-majima/Fig_03/{subject}_recon_image_{compare,selected}.pdf``.
+Each panel stacks the target stimuli on top of the reconstructions obtained under the
+four ablation conditions, one row per condition: one panel per subject over all 25
+stimuli (A2 = S1, A3 = S2, A4 = S3), plus a compact hand-picked variant.
 
-Each panel stacks the target stimuli on top of the reconstructions obtained
-under the four ablation conditions, one row per condition, followed by the
-DeepRecon (iCNN/VGG19) reconstructions as an external reference row.
+The manuscript's A2-A4 also carry a reference row from a separate iCNN implementation.
+Those reconstructions are produced outside this repository, so the row is drawn only
+when its directory is passed explicitly; by default the panels show the ablation
+conditions alone.
 
 Examples
 --------
-    python Fig4_recon_panels.py                      # both panels, S1/S2/S3
-    python Fig4_recon_panels.py --panel selected     # selected stimuli only
-    python Fig4_recon_panels.py --subjects S2        # single subject
-    python Fig4_recon_panels.py --no-deeprecon       # ablation conditions only
+    python Fig5_ablation_recon_panels.py                    # both panels, S1/S2/S3
+    python Fig5_ablation_recon_panels.py --panel selected   # hand-picked stimuli only
+    python Fig5_ablation_recon_panels.py --subjects S2      # single subject
+    python Fig5_ablation_recon_panels.py --deeprecon-root DIR   # add the reference row
 """
 from __future__ import annotations
 
@@ -44,15 +45,14 @@ COMPARISON_CONDITIONS = {
     "w/o Baye and CLIP": "wo_SGLD_CLIP_all",
 }
 
-# DeepRecon (iCNN + VGG19 relu7 generator) reconstructions produced outside this
-# repository. Subjects there are keyed by initials rather than S1/S2/S3.
-DEFAULT_DEEPRECON_ROOT = Path(
-    "/home/nu/mtanaka/project/feature-based-reconstruction-test/murakiy/work/data/reconstruction/icnn"
-    "/check_loss_and_latents_recon_icnn_image_gd_dist_vgg19_relu7generator_scaling_feature_std_train_mean_center_1000iter"
-    "/decoded/Imagery_deeprecon_VGG19"
-)
-DEEPRECON_LABEL = "DeepRecon (VGG19)"
+# Reference-row reconstructions from a separate iCNN implementation, produced outside
+# this repository (see the Figure A2-A4 note in README). Subjects are keyed there by
+# initials rather than S1/S2/S3.
+DEEPRECON_LABEL = "iCNN (reference)"
 DEEPRECON_SUBJECT_MAP = {"S1": "TH", "S2": "AM", "S3": "ES"}
+
+# One appendix figure per subject.
+APPENDIX_FIGURE = {"S1": "A2", "S2": "A3", "S3": "A4"}
 
 # Hand-picked stimuli used for the compact panel (one artificial shape plus
 # four natural images), in the order they appear in the published figure.
@@ -65,8 +65,9 @@ SELECTED_IMAGE_NAMES = (
 )
 
 PANEL_SPECS = {
-    "compare": (SOURCE_IMAGE_NAMES, "{subject}_recon_image_compare.pdf"),
-    "selected": (SELECTED_IMAGE_NAMES, "{subject}_recon_image_selected.pdf"),
+    "compare": (SOURCE_IMAGE_NAMES, "Fig{appendix}_{subject}_recon_image_compare.pdf"),
+    # Not a numbered manuscript figure, so it keeps a descriptive name.
+    "selected": (SELECTED_IMAGE_NAMES, "ablation_recon_image_selected_{subject}.pdf"),
 }
 
 
@@ -122,7 +123,9 @@ def export_panel(
         )
 
     drawer = GroupImageDrawer(conditions, title_fontcolor="black", title_fontsize=12)
-    output_path = output_dir / filename.format(subject=subject)
+    output_path = output_dir / filename.format(
+        subject=subject, appendix=APPENDIX_FIGURE.get(subject, subject)
+    )
     drawer.draw().save(output_path)
     return output_path
 
@@ -156,13 +159,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--deeprecon-root",
         type=Path,
-        default=DEFAULT_DEEPRECON_ROOT,
-        help="directory holding <initials>/VC DeepRecon tiff reconstructions",
-    )
-    parser.add_argument(
-        "--no-deeprecon",
-        action="store_true",
-        help="omit the DeepRecon reference row",
+        default=None,
+        help="directory holding <initials>/VC reference tiff reconstructions. Omitted "
+             "by default: those reconstructions come from a separate repository, so "
+             "the reference row is drawn only when this is given.",
     )
     return parser.parse_args()
 
@@ -171,7 +171,7 @@ def main() -> None:
     args = parse_args()
     output_dir = ensure_directory(args.output_dir)
     panels = list(PANEL_SPECS) if args.panel == "all" else [args.panel]
-    deeprecon_root = None if args.no_deeprecon else args.deeprecon_root
+    deeprecon_root = args.deeprecon_root
 
     for panel in panels:
         image_names, filename = PANEL_SPECS[panel]

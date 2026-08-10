@@ -54,7 +54,7 @@ All analyses are organized by **analysis unit** (pipeline), each producing one o
 | 2 | DreamSim distance distribution & pairs | 2D, 2E | ✅ Yes | `recon_distance_distribution.py --recon_root <run>` | `Fig_best_pairs.py`, `recon_distance_examples.py`, `export_dreamsim_matrices_csv.py` |
 | 3 | Run-to-run variability | 3A | ✅ Yes | `recon_image_koide-majima_methods_multi_times_no_seed.py original_all` | `Fig3A_variability_assets.py` |
 | 5 | Circular evaluation / recovery matrix | 4A, 4B | ❌ No | `run_recovery_reps.sh` (drives `recovery_matrix_invert_reps.py` + `recovery_check_eval.py`) | `Fig_recon_and_identification_errorbar.py` |
-| 6 | SGLD/CLIP ablation | 5A–E, A2–A4 | ✅ Yes | `compare_SGD_SGLD_recon_for_eval_sampling_variance.py` + `run_preference_analysis.py` | `Fig5_ablation_assets.py`, `Fig5_ablation_recon_panels.py`, `scripts/experiments/preference_analysis/preference_stats.py` |
+| 6 | SGLD/CLIP ablation | 5B, 5D, 5E, A2–A4 | ✅ Yes | `replicate_original_analysis.py` ×4 conditions → `preference_analysis/run_preference_analysis.sh` | `Fig5_ablation_assets.py`, `Fig5_ablation_recon_panels.py`, `preference_analysis/preference_stats.py` |
 | 7 | SGLD sampling effect | 6A–E, A6 | ✅ Yes | `replicate_original_analysis.py original_all` → `sgld_effect_summary.py` | `Fig6_sgld_effect_assets.py`, `Fig6_sgld_effect_diagnostic_assets.py`, `Fig6A_sgld_systematic_assets.py` |
 | 8 | SGLD hyperparameter sweep (OAT) | A5 | ❌ No | `oat_search_SGD_SGLD_sampling_params.py` + `oat_dreamsim_matrices.py` | `Fig_oat_composite.py`, `Fig_oat_dreamsim_matrix.py`, `Fig_oat_slice_summary.py` |
 | 9 | CPU/GPU determinism | A7 | ❌ No | `check_determinism.py` + `determinism_sweep.py` | `Fig_determinism_cpu_vs_gpu.py` |
@@ -120,7 +120,8 @@ Each figure in the manuscript can be regenerated from the code. Below are the mi
 | **2D, 2E** | Imagery | `uv run python scripts/experiments/recon_distance_distribution.py --recon_root <run> --method original_all` | `<run>/original_all/distance_summary/` (`distances_{metric}.csv`, `matrices_{metric}.npz`, distribution plots, `summary_*.txt`) | `uv run python scripts/create_figure_assets/Fig_best_pairs.py --csv <run>/original_all/distance_summary/distances_dreamsim.csv --subject S2` | `assets/fig02/` |
 | **3A** | Imagery | `uv run python scripts/experiments/recon_image_koide-majima_methods_multi_times_no_seed.py original_all` | `results/rep_recon_image_koide-majima_recon_variability_no_seed/` | `uv run python scripts/create_figure_assets/Fig3A_variability_assets.py` | `assets/fig03/` (one PDF per stimulus) |
 | **4A, 4B** | (None) | `bash scripts/experiments/run_recovery_reps.sh` | `results/recovery_from_rand_images/rep{00..09}/<opt_space>/` (`source/`, `recovered/`, `recovery_check_identification.pkl`) | `uv run python scripts/create_figure_assets/Fig_recon_and_identification_errorbar.py --reps_root results/recovery_from_rand_images --err sd` | `assets/fig04/` |
-| **5D, 5E** | Imagery | `uv run python scripts/experiments/compare_SGD_SGLD_recon_for_eval_sampling_variance.py && uv run python scripts/experiments/run_preference_analysis.py` | `results/rep_recon_image_koide-majima_comparing_SGD_updated_sampling_parameters/` | `uv run python scripts/experiments/preference_analysis/preference_stats.py` | `results/rep_recon_image_koide-majima/` |
+| **5B, 5D, 5E** | Imagery | `for m in original_all AdamOnly_all VGGonly_all wo_SGLD_CLIP_all; do uv run python scripts/experiments/replicate_original_analysis.py $m; done && bash scripts/experiments/preference_analysis/run_preference_analysis.sh` | `results/rep_recon_image_koide-majima/` (four condition trees + `ref_compare_{2,4}_*.pkl`) | `uv run python scripts/create_figure_assets/Fig5_ablation_assets.py` and `uv run python scripts/experiments/preference_analysis/preference_stats.py` | `assets/fig05/`; stats table to `results/rep_recon_image_koide-majima/preference_stats.csv` |
+| **A2–A4** | Imagery | (same four conditions as above) | `results/rep_recon_image_koide-majima/` | `uv run python scripts/create_figure_assets/Fig5_ablation_recon_panels.py` | `assets/fig05/` |
 | **A5** | (None) | `uv run python scripts/experiments/oat_search_SGD_SGLD_sampling_params.py && uv run python scripts/experiments/oat_dreamsim_matrices.py` | `results/oat_sampling_params/` | `uv run python scripts/create_figure_assets/Fig_oat_composite.py` | `assets/figA5/` |
 | **A6** | Imagery | `uv run python scripts/experiments/sgld_effect_summary.py S1 S2 S3` | `results/sgld_effect_summary/` | `uv run python scripts/create_figure_assets/Fig6A_sgld_systematic_assets.py` | `assets/fig06/` |
 | **A7** | (None) | `uv run python scripts/experiments/check_determinism.py --recon && uv run python scripts/experiments/determinism_sweep.py` | `results/determinism_check/`, `results/determinism_sweep/` | `uv run python scripts/create_figure_assets/Fig_determinism_cpu_vs_gpu.py` | `assets/figA7/` |
@@ -137,7 +138,18 @@ stimuli if they are not in `data/source`. `export_dreamsim_matrices_csv.py` turn
 
 ### Figure A2–A4 note
 
-Panels A2–A4 include a reference row showing results from an unpublished "revised iCNN" implementation (Tanaka et al., 2024; Nagano et al., in preparation). This variant is **not** included in this repository — those reference rows are external image assets. The ablation results for the main conditions (SGLD+CLIP, No SGLD+CLIP, SGLD+No CLIP, No SGLD+No CLIP) are fully reproducible via the commands in the table above.
+In the manuscript, panels A2–A4 carry a final reference row from a separate iCNN
+implementation (Wang et al., 2025), which is not part of this repository:
+<https://github.com/KamitaniLab/InterSiteNeuralCodeConversion> (archived at
+<https://doi.org/10.5281/zenodo.14910040>). `Fig5_ablation_recon_panels.py` therefore
+omits that row by default and draws the four ablation conditions only, which are fully
+reproducible here. To include it, generate those reconstructions separately and pass
+their directory:
+
+```bash
+uv run python scripts/create_figure_assets/Fig5_ablation_recon_panels.py \
+    --deeprecon-root <dir with {TH,AM,ES}/VC/recon_image-<stimulus>.tiff>
+```
 
 ## Seed-Reproducible Reconstruction
 
