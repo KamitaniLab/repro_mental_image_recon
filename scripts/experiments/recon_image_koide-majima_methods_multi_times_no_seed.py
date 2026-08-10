@@ -9,7 +9,7 @@ import pickle
 import scipy
 import os
 
-from recon_utils import get_target_image, convert_featname
+from recon_utils import get_target_label, convert_featname
 import recon_func_mod_KS as recon_func
 
 RESULT_ROOT = "./results/rep_recon_image_koide-majima_recon_variability_no_seed"
@@ -143,7 +143,7 @@ def main(
                 else:
                     tid = targetID
                 # %%
-                _, targetimname = get_target_image(targetID, targetimpath)
+                targetimname = get_target_label(targetID, targetimpath)
                 # VGG
                 list_path_vgg = list()
                 for t_layername in used_layers_VGG:

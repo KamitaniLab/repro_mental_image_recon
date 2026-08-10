@@ -8,7 +8,7 @@ import pickle
 import scipy
 import os
 
-from recon_utils import get_target_image, convert_featname
+from recon_utils import get_target_label, convert_featname
 import recon_func as recon_func
 
 
@@ -126,7 +126,7 @@ def main(reconMethod="original_all", save_base_dir=f"{RESULT_ROOT}/original_all"
             else:
                 tid = targetID
             # %%
-            _, targetimname = get_target_image(targetID, targetimpath)
+            targetimname = get_target_label(targetID, targetimpath)
 
             # VGG
             list_path_vgg = list()

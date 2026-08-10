@@ -66,7 +66,7 @@ def load_features(dt_cfg, prm_demo, subject, targetID, method, dev):
     """Per-target decoded/mean features. Models stay loaded across calls."""
     import pickle
     import scipy.io
-    from recon_utils import get_target_image, convert_featname
+    from recon_utils import get_target_label, convert_featname
 
     names = dt_cfg['models']['CLIP']['modelnames']
     clip_layer = dt_cfg['models']['CLIP']['used_layer']
@@ -74,7 +74,7 @@ def load_features(dt_cfg, prm_demo, subject, targetID, method, dev):
     vgg_in = dt_cfg['recon_feat_layers'][feat_set]['VGG19']
     vgg_dirs = convert_featname(vgg_in, cvt_to='directory')
     meanDir = dt_cfg['file_path']['mean_feat_dir']
-    _, targetimname = get_target_image(targetID, prm_demo['dt_targetimages_path'])
+    targetimname = get_target_label(targetID, prm_demo['dt_targetimages_path'])
 
     def decpath(model, layer):
         p = prm_demo['decfearture_path']

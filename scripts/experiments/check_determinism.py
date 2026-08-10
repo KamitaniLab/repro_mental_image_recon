@@ -100,7 +100,7 @@ def build_recon(args, dev):
     import yaml
     from PIL import Image
 
-    from recon_utils import get_target_image, convert_featname
+    from recon_utils import get_target_label, convert_featname
 
     with open('./scripts/config/demo_params.yaml', 'rb') as f:
         prm_demo = yaml.safe_load(f)
@@ -129,7 +129,7 @@ def build_recon(args, dev):
     vgg_in = dt_cfg["recon_feat_layers"][feat_set]["VGG19"]
     vgg_dirs = convert_featname(vgg_in, cvt_to='directory')
     meanDir = dt_cfg['file_path']['mean_feat_dir']
-    _, targetimname = get_target_image(args.target, prm_demo['dt_targetimages_path'])
+    targetimname = get_target_label(args.target, prm_demo['dt_targetimages_path'])
 
     def decpath(model, layer):
         p = prm_demo['decfearture_path']

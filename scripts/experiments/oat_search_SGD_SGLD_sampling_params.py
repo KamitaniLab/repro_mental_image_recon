@@ -40,7 +40,7 @@ import torch
 import yaml
 from PIL import Image
 
-from recon_utils import get_target_image, convert_featname
+from recon_utils import get_target_label, convert_featname
 import recon_func_mod_KS as recon_func
 
 seed = 42
@@ -158,7 +158,7 @@ def run_recon(models, params, save_base_dir, dt_cfg, prm_demo,
                 continue
 
             try:
-                _, targetimname = get_target_image(targetID, targetimpath)
+                targetimname = get_target_label(targetID, targetimpath)
                 # VGG
                 list_path_vgg = list()
                 for t_layername in used_layers_VGG:
