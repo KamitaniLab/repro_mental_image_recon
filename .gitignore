@@ -1,5 +1,6 @@
 # Generated outputs (regenerate via scripts/experiments/)
 results/
+results_backup*/
 figures/
 assets/
 assets_ipynb/
@@ -43,6 +44,11 @@ mental_img_recon/
 external/
 taming/
 repro_koide_majima/
+
+# Exploratory, not part of the published analysis
+scripts/experiments/layout.py
+scripts/experiments/recon_func_sghmc.py
+scripts/experiments/run_sghmc_recon.py
 
 # Manuscripts (private, tracked separately)
 manuscripts/

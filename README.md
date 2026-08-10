@@ -53,15 +53,15 @@ All analyses are organized by **analysis unit** (pipeline), each producing one o
 | 1 | Reconstruction generation & representativeness | 2C, A1 | ✅ Yes | `replicate_original_analysis.py original_all` | `Fig2C_assets.py` |
 | 2 | DreamSim distance distribution & pairs | 2D, 2E | ✅ Yes | `recon_distance_distribution.py --recon_root <run>` | `Fig_best_pairs.py`, `recon_distance_examples.py`, `export_dreamsim_matrices_csv.py` |
 | 3 | Run-to-run variability | 3A | ✅ Yes | `recon_image_koide-majima_methods_multi_times_no_seed.py original_all` | `Fig3A_variability_assets.py` |
-| 5 | Circular evaluation / recovery matrix | 4A, 4B | ❌ No | `run_recovery_reps.sh` (drives `recovery_matrix_invert_reps.py` + `recovery_check_eval.py`) | `Fig_recon_and_identification_errorbar.py` |
-| 6 | SGLD/CLIP ablation | 5B, 5D, 5E, A2–A4 | ✅ Yes | `replicate_original_analysis.py` ×4 conditions → `preference_analysis/run_preference_analysis.sh` | `Fig5_ablation_assets.py`, `Fig5_ablation_recon_panels.py`, `preference_analysis/preference_stats.py` |
-| 7 | SGLD sampling effect | 6B–E, A6 | ✅ Yes | Units 1 and 3 outputs → `sgld_effect_summary.py <subject>` | `Fig6_sgld_effect_assets.py`, `Fig6_sgld_effect_diagnostic_assets.py`, `FigA6_sgld_systematic_assets.py` |
-| 8 | SGLD hyperparameter sweep | A5 | ✅ Yes | `run_oat_search_4gpu.sh` (`MODE=oat`, then `MODE=slice`) + `oat_dreamsim_matrices.py` for each | `Fig_oat_composite.py`, `Fig_oat_dreamsim_matrix.py`, `Fig_oat_slice_summary.py` |
-| 9 | CPU/GPU determinism | A7 | ⚠️ For `--recon` | `check_determinism.py --recon` (once per device) + `determinism_sweep.py` | `Fig_determinism_cpu_vs_gpu.py` |
+| 4 | Circular evaluation / recovery matrix | 4A, 4B | ❌ No | `run_recovery_reps.sh` (drives `recovery_matrix_invert_reps.py` + `recovery_check_eval.py`) | `Fig_recon_and_identification_errorbar.py` |
+| 5 | SGLD/CLIP ablation | 5B, 5D, 5E, A2–A4 | ✅ Yes | `replicate_original_analysis.py` ×4 conditions → `preference_analysis/run_preference_analysis.sh` | `Fig5_ablation_assets.py`, `Fig5_ablation_recon_panels.py`, `preference_analysis/preference_stats.py` |
+| 6 | SGLD sampling effect | 6B–E, A6 | ✅ Yes | Units 1 and 3 outputs → `sgld_effect_summary.py <subject>` | `Fig6_sgld_effect_assets.py`, `Fig6_sgld_effect_diagnostic_assets.py`, `FigA6_sgld_systematic_assets.py` |
+| 7 | SGLD hyperparameter sweep | A5 | ✅ Yes | `run_oat_search_4gpu.sh` (`MODE=oat`, then `MODE=slice`) + `oat_dreamsim_matrices.py` for each | `Fig_oat_composite.py`, `Fig_oat_dreamsim_matrix.py`, `Fig_oat_slice_summary.py` |
+| 8 | CPU/GPU determinism | A7 | ⚠️ For `--recon` | `check_determinism.py --recon` (once per device) + `determinism_sweep.py` | `Fig_determinism_cpu_vs_gpu.py` |
 
 ### Imagery stimuli setup
 
-To run analyses that require imagery (Units 1, 2, 3, 6, 7, 8), you must provide the imagery target stimuli:
+To run analyses that require imagery (Units 1, 2, 3, 5, 6, 7), you must provide the imagery target stimuli:
 
 1. Contact the authors: **shirakawaken0118@gmail.com** to obtain `imageryExpStim.zip`
 2. Extract into the `data/` directory:
@@ -73,28 +73,28 @@ To run analyses that require imagery (Units 1, 2, 3, 6, 7, 8), you must provide 
    analyses use the remaining 25). Set `IMAGERY_SOURCE_DIR` to override this location.
 
 **Analyses that do NOT require imagery** (self-contained, can run immediately):
-- Unit 5 (Circular evaluation): uses noise-generated targets
-- Unit 9, the `forward` / `backward` determinism checks: use a fixed synthetic image.
+- Unit 4 (Circular evaluation): uses noise-generated targets
+- Unit 8, the `forward` / `backward` determinism checks: use a fixed synthetic image.
   The `--recon` check and `determinism_sweep.py` do need the decoded features and stimuli.
 
 ### Example workflow
 
-**For users WITHOUT imagery** (Unit 5, and the cheap determinism checks):
+**For users WITHOUT imagery** (Unit 4, and the cheap determinism checks):
 ```bash
-# Circular evaluation with noise targets (Unit 5)
+# Circular evaluation with noise targets (Unit 4)
 # 10 repetitions x 4 optimization spaces; each is a full inversion + evaluation.
 bash scripts/experiments/run_recovery_reps.sh
 uv run python scripts/create_figure_assets/Fig_recon_and_identification_errorbar.py \
     --reps_root results/recovery_from_rand_images --err sd
 
-# CPU/GPU determinism check (Unit 9)
+# CPU/GPU determinism check (Unit 8)
 uv run python scripts/experiments/check_determinism.py --device cpu
 uv run python scripts/experiments/check_determinism.py --device cuda
 ```
 
 **For users WITH imagery** (all units):
 ```bash
-# Generate base reconstructions (Units 1, 6, 7)
+# Generate base reconstructions (Units 1, 5, 6)
 uv run python scripts/experiments/replicate_original_analysis.py original_all
 
 # Run variability analysis (Unit 3)
