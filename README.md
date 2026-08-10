@@ -3,17 +3,17 @@
 This repository contains the code for the paper:
 
 **Ken Shirakawa, Yoshihiro Nagano, Misato Tanaka, Fan L. Cheng, Yukiyasu Kamitani**  
-*"Advancing credibility and transparency in brain-to-image reconstruction research: Reanalysis of Koide-Majima, Nishimoto, and Majima (Neural Networks, 2024)"*  
-Preprint: https://arxiv.org/abs/2511.07960
+*"Apparent and actual evidence in brain-to-image reconstruction: a reanalysis of Koide-Majima et al. (Neural Networks, 2024)"*  
+Preprint of an earlier version: https://arxiv.org/abs/2511.07960
 
 The repository collects scripts to re-run the imagery reconstruction analyses and reproduce all figures in the revised manuscript. It builds upon the original implementation in [`nkmjm/mental_img_recon`](https://github.com/nkmjm/mental_img_recon).
 
 ## Validated environment
-- Ubuntu 20.04.6 LTS
-- Python 3.12.4
-- NVIDIA Driver 535.183.01
-- CUDA 12.8
-- GPU: GeForce RTX 4090 (24GB)
+- Ubuntu 20.04.2 LTS (kernel 5.15.0)
+- Python 3.12.11
+- NVIDIA Driver 535.171.04 (driver CUDA 12.2)
+- PyTorch 2.9.0 built against CUDA 12.8 (`cu128` wheels)
+- GPU: GeForce RTX 3090 (24GB)
 
 ## Quick Start
 

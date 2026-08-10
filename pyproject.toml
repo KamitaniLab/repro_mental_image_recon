@@ -1,7 +1,7 @@
 [project]
 name = "repro_mental_image_recon"
 version = "0.1.0"
-description = "Add your description here"
+description = "Reanalysis of mental image reconstruction in Koide-Majima et al. (Neural Networks, 2024): reconstruction, ablation and evaluation pipelines behind the manuscript figures"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.12, <3.13"
