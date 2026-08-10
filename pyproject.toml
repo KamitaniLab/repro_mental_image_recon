@@ -45,7 +45,10 @@ dependencies = [
 
 [tool.uv.sources]
 taming-transformers = { path = "lib/taming-transformers" }
-mental-img-recon = { path = "lib/mental_img_recon" }
+# editable: the source is a submodule, so the installed code must follow whatever
+# commit lib/mental_img_recon is checked out at. A non-editable install snapshots
+# it at build time and keeps serving the old modules after a submodule update.
+mental-img-recon = { path = "lib/mental_img_recon", editable = true }
 bdpy = { git = "https://github.com/KamitaniLab/bdpy.git", rev = "d86199f"}
 clip = { git = "https://github.com/openai/CLIP.git", rev = "dcba3cb" }
 torch = [
