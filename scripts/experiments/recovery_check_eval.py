@@ -26,7 +26,7 @@ import torchvision
 import yaml
 
 # Load config for mental_img_recon path
-with open("./scripts/config/config_KS_mod.yaml", "rb") as f:
+with open("./scripts/config/config_recon.yaml", "rb") as f:
     dt_cfg = yaml.safe_load(f)
 mental_img_recon_dir = dt_cfg["file_path"]["mental_img_recon_dir"]
 sys.path.append(mental_img_recon_dir)

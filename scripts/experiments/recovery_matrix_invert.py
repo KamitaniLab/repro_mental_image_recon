@@ -27,7 +27,7 @@ from PIL import Image
 import yaml
 
 # Load config for mental_img_recon path
-with open("./scripts/config/config_KS_mod.yaml", "rb") as f:
+with open("./scripts/config/config_recon.yaml", "rb") as f:
     dt_cfg = yaml.safe_load(f)
 mental_img_recon_dir = dt_cfg["file_path"]["mental_img_recon_dir"]
 sys.path.append(mental_img_recon_dir)
@@ -39,7 +39,7 @@ torch.manual_seed(SEED)
 np.random.seed(SEED)
 torch.backends.cudnn.deterministic = True
 
-# original_all procedure params (config_KS_mod.yaml)
+# original_all procedure params (config_recon.yaml)
 N_WO = 1000          # withoutLangevin (Adam) reps
 LR_WO = 0.5
 N_LANG = 500         # Langevin (SGLD) reps
@@ -240,7 +240,7 @@ def main():
     args = ap.parse_args()
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    dt_cfg = yaml.safe_load(open("./scripts/config/config_KS_mod.yaml", "rb"))
+    dt_cfg = yaml.safe_load(open("./scripts/config/config_recon.yaml", "rb"))
     taming_dir = dt_cfg["file_path"]["taming_transformer_dir"]
     sys.path.insert(0, taming_dir)
     import model_loading

@@ -45,11 +45,11 @@ def main(reconMethod='original_all', save_base_dir = './test', seed=None,
     # load config
     with open('./scripts/config/demo_params.yaml', 'rb') as f:
         prm_demo = yaml.safe_load(f)
-    with open('./scripts/config/config_KS_mod.yaml', 'rb') as f:
+    with open('./scripts/config/config_recon.yaml', 'rb') as f:
         dt_cfg = yaml.safe_load(f)
 
     # Resolve the seed: explicit --seed wins, otherwise the `seed` entry in
-    # config_KS_mod.yaml (default 42). set_seed pins the global RNGs and cuDNN.
+    # config_recon.yaml (default 42). set_seed pins the global RNGs and cuDNN.
     if seed is None:
         seed = dt_cfg.get('seed', 42)
     recon_func.set_seed(seed)
@@ -326,7 +326,7 @@ if __name__ == '__main__':
                                  ])
     parser.add_argument('--seed', type=int, default=None,
                         help='base random seed (default: the `seed` entry in '
-                             'config_KS_mod.yaml, else 42). Per-run seeds are '
+                             'config_recon.yaml, else 42). Per-run seeds are '
                              'derived from it plus subject/target/iteration.')
     parser.add_argument('--results_dir', type=str, default=None,
                         help='output directory (default: results/rep_recon_image_koide-majima'
@@ -346,7 +346,7 @@ if __name__ == '__main__':
     else:
         # Separate directory per seed, and separate from the unseeded
         # `..._recon_variability_no_seed` results, which are never overwritten.
-        with open('./scripts/config/config_KS_mod.yaml', 'rb') as f:
+        with open('./scripts/config/config_recon.yaml', 'rb') as f:
             _seed = args.seed if args.seed is not None else yaml.safe_load(f).get('seed', 42)
         save_base_dir = (f'./results/rep_recon_image_koide-majima_recon_reproducible'
                          f'_seed{_seed}/{reconMethod}')

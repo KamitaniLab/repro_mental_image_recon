@@ -53,7 +53,7 @@ def main():
     args = ap.parse_args()
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    dt_cfg = yaml.safe_load(open("./scripts/config/config_KS_mod.yaml", "rb"))
+    dt_cfg = yaml.safe_load(open("./scripts/config/config_recon.yaml", "rb"))
     taming_dir = dt_cfg["file_path"]["taming_transformer_dir"]
     sys.path.insert(0, taming_dir)
     import model_loading

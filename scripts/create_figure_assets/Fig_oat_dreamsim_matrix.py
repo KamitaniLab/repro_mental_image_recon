@@ -95,7 +95,7 @@ def short_label(tag: str, reference: str) -> str:
 
 
 # Display form of the tag fields: the symbols the paper uses. wL / woL are the
-# Langevin and the Adam phase respectively (recon_func_mod_KS.withoutLangevin
+# Langevin and the Adam phase respectively (recon_func_mod.withoutLangevin
 # optimises with Adam), so they read as step counts, not weights.
 TOKEN_DISPLAY = {
     "a": r"$\alpha$", "b": "b", "g": r"$\gamma$", "T": "T",

@@ -11,7 +11,7 @@ import scipy
 import os
 
 from recon_utils import get_target_label, convert_featname
-import recon_func_mod_KS as recon_func
+import recon_func_mod as recon_func
 
 RESULT_ROOT = (
     "./results/rep_recon_image_koide-majima_comparing_SGD_updated_sampling_parameters"
@@ -32,7 +32,7 @@ def main(reconMethod="original_all", save_base_dir=f"{RESULT_ROOT}/original_all"
     # load config
     with open("./scripts/config/demo_params.yaml", "rb") as f:
         prm_demo = yaml.safe_load(f)
-    with open("./scripts/config/config_KS_mod.yaml", "rb") as f:
+    with open("./scripts/config/config_recon.yaml", "rb") as f:
         dt_cfg = yaml.safe_load(f)
 
     dir_taming_transformer = dt_cfg["file_path"]["taming_transformer_dir"]
@@ -431,7 +431,7 @@ if __name__ == "__main__":
     # Take the choices from the config rather than restating them: the previous list
     # named six conditions that recon_params does not define, and selecting any of
     # them failed with a KeyError.
-    with open("./scripts/config/config_KS_mod.yaml", "rb") as f:
+    with open("./scripts/config/config_recon.yaml", "rb") as f:
         available_methods = sorted(yaml.safe_load(f)["recon_params"])
     parser.add_argument(
         "method",

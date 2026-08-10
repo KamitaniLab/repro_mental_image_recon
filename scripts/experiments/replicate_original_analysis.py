@@ -21,7 +21,7 @@ def main(reconMethod="original_all", save_base_dir=f"{RESULT_ROOT}/original_all"
     with open("./scripts/config/demo_params.yaml", "rb") as f:
         prm_demo = yaml.safe_load(f)
     # Load config for imrecon
-    with open("./scripts/config/config_KS_mod.yaml", "rb") as f:
+    with open("./scripts/config/config_recon.yaml", "rb") as f:
         dt_cfg = yaml.safe_load(f)
     # Set directory of taming_transformer
     dir_taming_transformer = dt_cfg["file_path"]["taming_transformer_dir"]

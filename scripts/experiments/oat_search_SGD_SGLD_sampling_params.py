@@ -41,7 +41,7 @@ import yaml
 from PIL import Image
 
 from recon_utils import get_target_label, convert_featname
-import recon_func_mod_KS as recon_func
+import recon_func_mod as recon_func
 
 seed = 42
 random.seed(seed)
@@ -54,7 +54,7 @@ torch.backends.cudnn.deterministic = True
 def load_config():
     with open('./scripts/config/demo_params.yaml', 'rb') as f:
         prm_demo = yaml.safe_load(f)
-    with open('./scripts/config/config_KS_mod.yaml', 'rb') as f:
+    with open('./scripts/config/config_recon.yaml', 'rb') as f:
         dt_cfg = yaml.safe_load(f)
     return prm_demo, dt_cfg
 

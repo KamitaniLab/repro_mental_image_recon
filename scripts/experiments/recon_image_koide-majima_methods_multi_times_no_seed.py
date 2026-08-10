@@ -10,7 +10,7 @@ import scipy
 import os
 
 from recon_utils import get_target_label, convert_featname
-import recon_func_mod_KS as recon_func
+import recon_func_mod as recon_func
 
 RESULT_ROOT = "./results/rep_recon_image_koide-majima_recon_variability_no_seed"
 
@@ -31,7 +31,7 @@ def main(
     # load config
     with open("./scripts/config/demo_params.yaml", "rb") as f:
         prm_demo = yaml.safe_load(f)
-    with open("./scripts/config/config_KS_mod.yaml", "rb") as f:
+    with open("./scripts/config/config_recon.yaml", "rb") as f:
         dt_cfg = yaml.safe_load(f)
 
     dir_taming_transformer = dt_cfg["file_path"]["taming_transformer_dir"]
