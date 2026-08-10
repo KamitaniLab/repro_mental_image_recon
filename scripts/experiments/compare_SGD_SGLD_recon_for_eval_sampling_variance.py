@@ -13,6 +13,12 @@ import os
 from recon_utils import get_target_image, convert_featname
 import recon_func_mod_KS as recon_func
 
+RESULT_ROOT = (
+    "./results/rep_recon_image_koide-majima_comparing_SGD_updated_sampling_parameters"
+)
+# Independent one-step SGLD draws saved per reconstruction, as sampling_00 .. sampling_NN.
+N_SAMPLING_DRAWS = 10
+
 seed = 42
 random.seed(seed)
 torch.manual_seed(seed)
@@ -22,7 +28,7 @@ torch.backends.cudnn.deterministic = True
 
 
 # %%
-def main(reconMethod="original", save_base_dir="./test"):
+def main(reconMethod="original_all", save_base_dir=f"{RESULT_ROOT}/original_all"):
     # load config
     with open("./scripts/config/demo_params.yaml", "rb") as f:
         prm_demo = yaml.safe_load(f)
@@ -77,7 +83,6 @@ def main(reconMethod="original", save_base_dir="./test"):
     # ID  7: 'Blue + (symbol)'
     # ID 14: 'Black x (symbol)'
     targetID_list = np.arange(25)
-    image_label_list = ["Img{:04d}".format(i) for i in range(1, 27)]
 
     # reconMethod = 'original' # select from 'original' (default), 'Langevin', 'withoutLangevin'
 
@@ -100,7 +105,6 @@ def main(reconMethod="original", save_base_dir="./test"):
     # Set parameters
     CLIPcoef_ = dt_cfg["recon_params"][reconMethod]["clip_coef"]
     feat_set = dt_cfg["recon_params"][reconMethod]["feat_set"]
-    disp_every = dt_cfg["recon_params"][reconMethod]["display_every"]
     numReps = dt_cfg["recon_params"][reconMethod]["numReps"]
     similarity = dt_cfg["recon_params"][reconMethod]["similarity"]
 
@@ -121,8 +125,8 @@ def main(reconMethod="original", save_base_dir="./test"):
     ]  # 500 # (default) 500
 
     # %%
-    for j, subject in enumerate(subject_list):
-        for i, targetID in enumerate(targetID_list):
+    for subject in subject_list:
+        for targetID in targetID_list:
             save_subject = subject_dict[subject]
             save_dir = f"{save_base_dir}/{save_subject}/VC"
             os.makedirs(save_dir, exist_ok=True)
@@ -132,8 +136,6 @@ def main(reconMethod="original", save_base_dir="./test"):
                 tid = targetID
             # %%
             targetImg_, targetimname = get_target_image(targetID, targetimpath)
-            recon_name = f"Stim{i + 1:02}_{targetimname}"
-            true_image_dir = "./data/ImageryDeeprecon/source"
             # VGG
             list_path_vgg = list()
             for t_layername in used_layers_VGG:
@@ -287,6 +289,12 @@ def main(reconMethod="original", save_base_dir="./test"):
             loss_vgg_SGD_list = []
             loss_clip_SGD_list = []
 
+            # Set only when the Langevin phase runs; kept explicit so the saving code
+            # below does not have to inspect locals() to find out.
+            currentLatentVec_SGLD = None
+            currentLatentVec_SGD = None
+            recImg_SGD = None
+
             if numReps_Langevin > 0:
                 # generator = reconf.Langevin(initInput=currentLatentVec, initInputType='latentVector', numReps=numReps_Langevin, returnVec=True)
                 generator = reconf.Langevin(
@@ -350,7 +358,10 @@ def main(reconMethod="original", save_base_dir="./test"):
             # %%
             image_label = "Img{:04d}".format(tid + 1)
             save_file_name = f"{save_dir}/{image_label}.pkl"
-            to_np = lambda t: None if t is None else t.cpu().detach().numpy()
+
+            def to_np(t):
+                return None if t is None else t.cpu().detach().numpy()
+
             save_dict = {
                 # latent vec
                 "latent_vec_adam": to_np(currentLatentVec),
@@ -371,58 +382,45 @@ def main(reconMethod="original", save_base_dir="./test"):
                 "loss_clip_SGD_list": loss_clip_SGD_list,
             }
 
-            # 条件付きで追加
-            if "currentLatentVec_SGLD" in locals():
-                save_dict["latent_vec_SGLD"] = (
-                    currentLatentVec_SGLD.cpu().detach().numpy()
-                )
+            # Only present when the Langevin phase ran (numReps_withLangevin > 0).
+            if currentLatentVec_SGLD is not None:
+                save_dict["latent_vec_SGLD"] = to_np(currentLatentVec_SGLD)
+            if currentLatentVec_SGD is not None:
+                save_dict["latent_vec_SGD"] = to_np(currentLatentVec_SGD)
 
-            if "currentLatentVec_SGD" in locals():
-                save_dict["latent_vec_SGD"] = (
-                    currentLatentVec_SGD.cpu().detach().numpy()
-                )
-                with open(save_file_name, "wb") as f:
-                    pickle.dump(save_dict, f)
-                # save images
-                save_recon_image = f"{save_dir}/{recon_name}.tiff"
+            with open(save_file_name, "wb") as f:
+                pickle.dump(save_dict, f)
 
-                save_name = f"{save_dir}/recon_img_normalized-{image_label}.jpg"
-                recImg.save(save_name)
+            # save images
+            save_name = f"{save_dir}/recon_img_normalized-{image_label}.jpg"
+            recImg.save(save_name)
 
+            if recImg_SGD is not None:
                 sgd_save_dir = os.path.join(save_dir, "SGD")
                 os.makedirs(sgd_save_dir, exist_ok=True)
                 save_name = f"{sgd_save_dir}/recon_img_normalized-{image_label}.jpg"
                 recImg_SGD.save(save_name)
 
-                # save the results
-                for kk in range(10):
-                    generator_ = reconf.Langevin(
-                        initInput=currentLatentVec,
-                        initInputType="latentVector",
-                        numReps=1,
-                        returnVec=True,
-                        lr_gamma=0,
-                        lr_a=0.1,
-                        lr_b=lr_b + 1e-8,
-                        T=T_langevin,
+            # Independent one-step draws from the same starting latent, to show how
+            # far a single SGLD step moves the reconstruction.
+            for kk in range(N_SAMPLING_DRAWS):
+                generator_ = reconf.Langevin(
+                    initInput=currentLatentVec,
+                    initInputType="latentVector",
+                    numReps=1,
+                    returnVec=True,
+                    lr_gamma=0,
+                    lr_a=0.1,
+                    lr_b=lr_b + 1e-8,
+                    T=T_langevin,
+                )
+                for recImg_draw, _, _, _, _ in generator_:
+                    save_dir_ = f"{save_dir}/sampling_{kk:02}"
+                    os.makedirs(save_dir_, exist_ok=True)
+                    save_name = (
+                        f"{save_dir_}/recon_img_normalized-{image_label}.jpg"
                     )
-                    for (
-                        recImg,
-                        time_step,
-                        loss_VGG,
-                        loss_CLIP,
-                        currentLatentVec,
-                    ) in generator_:
-                        # print(currentLatentVec)
-                        save_dir_ = f"{save_dir}/sampling_{kk:02}"
-                        os.makedirs(save_dir_, exist_ok=True)
-                        # save images
-                        save_recon_image = f"{save_dir_}/{recon_name}.tiff"
-                        image_label = "Img{:04d}".format(tid + 1)
-                        save_name = (
-                            f"{save_dir_}/recon_img_normalized-{image_label}.jpg"
-                        )
-                        recImg.save(save_name)
+                    recImg_draw.save(save_name)
 
 
 if __name__ == "__main__":
@@ -430,26 +428,21 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="select reconstruction methods, provided by koide-majima"
     )
+    # Take the choices from the config rather than restating them: the previous list
+    # named six conditions that recon_params does not define, and selecting any of
+    # them failed with a KeyError.
+    with open("./scripts/config/config_KS_mod.yaml", "rb") as f:
+        available_methods = sorted(yaml.safe_load(f)["recon_params"])
     parser.add_argument(
         "method",
         type=str,
         help="select the method to use",
         default="original_all",
-        choices=[
-            "original_all",
-            "CLIPonly_all",
-            "original_all_default_SGLD_v2",
-            "original_all_default_SGLD_v2_normal_temp",
-            "original_all_fixed_values_SGLD_v2",
-            "original_all_fixed_values_SGLD_v3",
-            "original_all_fixed_values_SGLD_v2_normal_temp",
-            "original_all_fixed_values_SGLD_v3_normal_temp",
-        ],
+        choices=available_methods,
     )
     args = parser.parse_args()
-    # the first arugment is the method to use
 
     reconMethod = args.method
-    save_base_dir = f"./results/250410_recon_image_koide-majima_comparing_SGD_updated_sampling_parameters/{reconMethod}"
+    save_base_dir = f"{RESULT_ROOT}/{reconMethod}"
     os.makedirs(save_base_dir, exist_ok=True)
     main(reconMethod, save_base_dir)

@@ -1,11 +1,18 @@
-"""Generate assets for Figure 5B and related supplementary panels."""
+"""Generate the Figure 6B panel: reconstructions before and after SGLD.
+
+Rows are the target, the reconstruction after the 1000 Adam steps (pre-SGLD, saved by
+the reconstruction script under ``wo_lang/``), the reconstruction after the 500 SGLD
+steps, and their pixel-wise absolute difference.
+
+The manuscript shows this for the same stimuli as Figure 5B, so the selection is taken
+from ``Fig5_ablation_assets`` rather than restated here, where the two could drift.
+"""
 
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
-from typing import Iterable
 
-import numpy as np
 from PIL import ImageChops
 
 from fig_utils import GroupImageDrawer
@@ -15,68 +22,26 @@ from figure_asset_utils import (
     load_target_images,
     project_root,
 )
+from Fig5_ablation_assets import SUBJECT_ID, _select_random_stimuli
 
 PROJECT_ROOT = project_root()
 RECON_ROOT = PROJECT_ROOT / "results" / "rep_recon_image_koide-majima"
-OUTPUT_DIR = ensure_directory(PROJECT_ROOT / "assets" / "fig06")
+OUTPUT_DIR = PROJECT_ROOT / "assets" / "fig06"
 
-SUBJECT_ID = "S1"
 BASE_CONDITION = "original_all"
-# copyright-safe subset of images for Figure 5
-RANDOM_POOL = (
-    "imageryExpStim01_red_smallring.tiff",
-    # "imageryExpStim02_red_+.tiff",
-    # "imageryExpStim04_green_smallring.tiff",
-    # "imageryExpStim05_green_+.tiff",
-    # "imageryExpStim07_blue_smallring.tiff",
-    "imageryExpStim08_blue_+.tiff",
-    # "imageryExpStim10_white_smallring.tiff",
-    # "imageryExpStim11_white_+.tiff",
-    "imageryExpStim18_anat_goldfish.tiff",
-    "imageryExpStim21_anat_swan.tiff",
-    # "imageryExpStim24_inat_post.tiff",
-    "imageryExpStim25_inat_stainedglass.tiff",
-    # "imageryExpStim26_inat_umbrella.tiff",
-)
-RANDOM_COUNT = 5
-RANDOM_SEED = 42
-IMAGE_SELECTION = tuple(
-    sorted(
-        np.random.default_rng(RANDOM_SEED).choice(
-            RANDOM_POOL, size=RANDOM_COUNT, replace=False
-        )
-    )
-)
-
-SGLD_VARIANTS = (
-    ("eps = 0.1", "original_all_fixed_values_SGLD_v3"),
-    ("eps = 1.0", "original_all_fixed_values_SGLD_v4"),
-    ("eps = 10", "original_all_fixed_values_SGLD_v5"),
-)
-SGLD_VARIANTS_NORMAL_TEMP = (
-    ("eps = 0.1", "original_all_fixed_values_SGLD_v3_nomal_temp"),
-    ("eps = 1.0", "original_all_fixed_values_SGLD_v4_normal_temp"),
-    ("eps = 10", "original_all_fixed_values_SGLD_v5_normal_temp"),
-)
+# "using the same target samples shown in Figure 5B" -- see module docstring.
+IMAGE_SELECTION = _select_random_stimuli()
 
 
-def _recon_dir(condition_key: str, extra: str | None = None) -> Path:
-    base = RECON_ROOT / condition_key / SUBJECT_ID / "VC"
+def _recon_dir(recon_root: Path, extra: str | None = None) -> Path:
+    base = recon_root / BASE_CONDITION / SUBJECT_ID / "VC"
     return base / extra if extra else base
 
 
-def _load_targets() -> list:
-    return load_target_images(IMAGE_SELECTION)
-
-
-def _load_recons(condition_key: str, extra: str | None = None) -> list:
-    return load_recon_images(_recon_dir(condition_key, extra), IMAGE_SELECTION)
-
-
-def export_diff_panel() -> None:
-    targets = _load_targets()
-    adam_images = _load_recons(BASE_CONDITION, "wo_lang")
-    sgld_images = _load_recons(BASE_CONDITION)
+def export_diff_panel(recon_root: Path, output_dir: Path) -> Path:
+    targets = load_target_images(IMAGE_SELECTION)
+    adam_images = load_recon_images(_recon_dir(recon_root, "wo_lang"), IMAGE_SELECTION)
+    sgld_images = load_recon_images(_recon_dir(recon_root), IMAGE_SELECTION)
     diff_images = [
         ImageChops.difference(a, b) for a, b in zip(adam_images, sgld_images)
     ]
@@ -94,48 +59,19 @@ def export_diff_panel() -> None:
         title_fontsize=12,
         max_column_size=len(IMAGE_SELECTION),
     )
-    panel = drawer.draw()
-    panel.save(OUTPUT_DIR / f"fig05_{SUBJECT_ID}_recon_image_compare_diff_random.pdf")
-
-
-def _export_sgld_variants(
-    variants: Iterable[tuple[str, str]], output_name: str
-) -> None:
-    targets = _load_targets()
-    pre_sgld = _load_recons(BASE_CONDITION, "wo_lang")
-    baseline = _load_recons(BASE_CONDITION)
-
-    conditions = [
-        {"title": "Target", "images": targets},
-        {"title": "Pre-SGLD", "images": pre_sgld},
-        {"title": "Koide-Majima", "images": baseline},
-    ]
-
-    for label, condition_key in variants:
-        images = _load_recons(condition_key)
-        conditions.append({"title": label, "images": images})
-
-    drawer = GroupImageDrawer(
-        conditions,
-        title_fontcolor="black",
-        title_fontsize=12,
-        max_column_size=len(IMAGE_SELECTION),
-    )
-    panel = drawer.draw()
-    panel.save(OUTPUT_DIR / output_name)
-
-
-def export_variant_panels() -> None:
-    _export_sgld_variants(SGLD_VARIANTS, f"figS05_{SUBJECT_ID}_recon_image_compare.pdf")
-    _export_sgld_variants(
-        SGLD_VARIANTS_NORMAL_TEMP,
-        f"figS05_{SUBJECT_ID}_recon_image_compare_normal_temp.pdf",
-    )
+    output_path = output_dir / f"Fig6B_{SUBJECT_ID}_recon_image_diff.pdf"
+    drawer.draw().save(output_path)
+    return output_path
 
 
 def main() -> None:
-    export_diff_panel()
-    export_variant_panels()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--recon-root", type=Path, default=RECON_ROOT,
+                        help="directory holding <condition>/<subject>/VC{,/wo_lang}")
+    parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR)
+    args = parser.parse_args()
+    saved = export_diff_panel(args.recon_root, ensure_directory(args.output_dir))
+    print(f"saved {saved}")
 
 
 if __name__ == "__main__":

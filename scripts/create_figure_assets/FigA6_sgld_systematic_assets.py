@@ -1,6 +1,6 @@
 """Systematic summary of the SGLD sampling effect across all subjects/images.
 
-Extends Figure 5C-E -- which illustrated the minimal SGLD effect on a single
+This is Figure A6. It extends Figure 6C-E -- which illustrated the minimal SGLD effect on a single
 trace -- with a dataset-wide quantification. It aggregates the per-reconstruction
 summaries produced by ``scripts/experiments/sgld_effect_summary.py`` (one ``.npz``
 per subject) into:
@@ -13,7 +13,7 @@ per subject) into:
 It also writes a CSV of summary statistics. Run the experiment script for each
 subject first, then::
 
-    python scripts/create_figure_assets/Fig5_sgld_systematic_assets.py
+    python scripts/create_figure_assets/FigA6_sgld_systematic_assets.py
 """
 from __future__ import annotations
 
@@ -210,7 +210,8 @@ def _make_figure(pixel_std_all, latent_std_all, pixel_ac, latent_ac, lags,
     return fig
 
 
-def export(summary_dir: Path, output_dir: Path, subjects: tuple[str, ...]) -> None:
+def export(summary_dir: Path, output_dir: Path, table_dir: Path,
+           subjects: tuple[str, ...]) -> None:
     summaries = {s: load_subject(summary_dir, s) for s in subjects}
     lags = next(iter(summaries.values()))["lags"]
 
@@ -232,13 +233,15 @@ def export(summary_dir: Path, output_dir: Path, subjects: tuple[str, ...]) -> No
     for log, suffix in ((False, ""), (True, "_log")):
         fig = _make_figure(pixel_std_all, latent_std_all, pixel_ac, latent_ac,
                            lags, n_total, log=log)
-        pdf_path = output_dir / f"fig05_sgld_systematic{suffix}.pdf"
+        pdf_path = output_dir / f"FigA6_sgld_systematic{suffix}.pdf"
         fig.savefig(pdf_path)
         fig.savefig(pdf_path.with_suffix(".png"), dpi=150)
         plt.close(fig)
         print(f"Saved figure to {pdf_path}")
 
-    csv_path = output_dir / "fig05_sgld_systematic_summary.csv"
+    # The table is a number, not a figure, so it stays under results/.
+    ensure_directory(table_dir)
+    csv_path = table_dir / "FigA6_sgld_systematic_summary.csv"
     rows = (_summary_rows("pixel_per_coord_SD", pixel_std_all)
             + _summary_rows("latent_per_coord_SD", latent_std_all))
     with csv_path.open("w", newline="") as handle:
@@ -253,8 +256,12 @@ def main() -> None:
     parser.add_argument("--condition", type=str, default="original_all")
     parser.add_argument("--summary-dir", type=Path, default=DEFAULT_SUMMARY_DIR)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument("--table-dir", type=Path, default=None,
+                        help="where the summary table goes (default: alongside the "
+                             "per-subject .npz under results/)")
     args = parser.parse_args()
-    export(args.summary_dir / args.condition, args.output_dir, SUBJECTS)
+    summary_dir = args.summary_dir / args.condition
+    export(summary_dir, args.output_dir, args.table_dir or summary_dir, SUBJECTS)
 
 
 if __name__ == "__main__":
