@@ -80,32 +80,41 @@ Analyses 1 and 3 produce the reconstructions that 2, 5 and 6 consume, so run the
 
 ```bash
 uv run python scripts/experiments/replicate_original_analysis.py original_all
-uv run python scripts/create_figure_assets/Fig2C_assets.py
+uv run python scripts/create_figure_assets/Fig2C_assets.py   # Fig 2C and Fig A1
 ```
 
-Reconstructions land in `results/rep_recon_image_koide-majima/original_all/{S1,S2,S3}/VC/`;
-figures in `assets/fig02/`.
+Reconstructions land in `results/rep_recon_image_koide-majima/original_all/{S1,S2,S3}/VC/`.
+One script draws both figures: `assets/fig02/Fig2C_recon_image_random.pdf` (the randomly
+selected natural-image targets) and `assets/fig02/FigA1_recon_image_all.pdf` (all 25 targets
+× 3 subjects).
 
 ### Analysis 2 — distance distribution analysis (Fig 2D, 2E)
 
 ```bash
+# Fig 2D — matched vs non-target distance distributions, with auc and Mann-Whitney p.
+# The analysis script draws this one itself, next to the numbers it computed.
 uv run python scripts/experiments/recon_distance_distribution.py \
     --recon_root results/rep_recon_image_koide-majima --method original_all
 
-uv run python scripts/create_figure_assets/Fig_best_pairs.py \
+# Fig 2E — subject 2's target/reconstruction pairs, sorted by matched distance
+uv run python scripts/create_figure_assets/Fig2E_best_pairs.py \
     --csv results/rep_recon_image_koide-majima/original_all/distance_summary/distances_dreamsim.csv \
     --subject S2
 ```
 
-`--recon_root` is any reconstruction root holding `<method>/<subject>/VC/`. The summary
-directory gets `distances_{metric}.csv`, `matrices_{metric}.npz`, the distribution plots and
-`summary_*.txt`; figures go to `assets/fig02/`.
+`--recon_root` is any reconstruction root holding `<method>/<subject>/VC/`. Both the numbers
+and Fig 2D land in `<run>/original_all/distance_summary/`: `distances_{metric}.csv`,
+`matrices_{metric}.npz`, `summary_*.txt`, and `distance_distribution_{tag}.pdf` plus its
+per-subject and box-plot variants. Fig 2E goes to `assets/fig02/`.
 
-`Fig_best_pairs.py` takes the reconstruction directory from the CSV's own location, so it
+`Fig2E_best_pairs.py` takes the reconstruction directory from the CSV's own location, so it
 always draws the run the distances came from — override with `--recon_dir`, and `--true_dir`
-if the stimuli are not in `data/source`. Two more scripts read the same summary directory:
-`recon_distance_examples.py` (example pairs) and `export_dreamsim_matrices_csv.py`
-(`matrices_{metric}.npz` → one labelled CSV per subject).
+if the stimuli are not in `data/source`.
+
+Two more scripts read the same summary directory. Neither produces a manuscript figure; both
+are for inspecting the distances by hand: `recon_distance_examples.py` renders the closest and
+farthest matched pairs as a gallery, and `export_dreamsim_matrices_csv.py` turns
+`matrices_{metric}.npz` into one labelled CSV per subject.
 
 ### Analysis 3 — run-to-run variability analysis (Fig 3A)
 
@@ -115,21 +124,26 @@ uv run python scripts/create_figure_assets/Fig3A_variability_assets.py
 ```
 
 Ten unseeded repetitions per stimulus, under
-`results/rep_recon_image_koide-majima_recon_variability_no_seed/`. The pickles keep the full
-500-step SGLD trajectory (~670 MB each), which is what analysis 6 needs. One PDF per stimulus in
+`results/rep_recon_image_koide-majima_recon_variability_no_seed/`, and one PDF per stimulus in
 `assets/fig03/`.
+
+**Analysis 6 reuses this output**, so do not delete it after drawing Fig 3A. Unlike the
+pickles from analysis 1, these keep the full 500-step SGLD trajectory — which is why they run
+~670 MB each, and why Fig 6C–E and Fig A6 can only be built from here.
 
 ### Analysis 4 — circular evaluation analysis (Fig 4A, 4B)
 
 ```bash
 bash scripts/experiments/run_recovery_reps.sh
-uv run python scripts/create_figure_assets/Fig_recon_and_identification_errorbar.py \
-    --reps_root results/recovery_from_rand_images --err sd
+uv run python scripts/create_figure_assets/Fig4_recon_and_identification_errorbar.py \
+    --reps_root results/recovery_from_rand_images --err sd   # Fig 4A and Fig 4B
 ```
 
 No imagery needed: the targets are RGB noise generated from `--seed`. Ten repetitions ×
 four optimization spaces, each a full inversion plus evaluation, under
-`results/recovery_from_rand_images/rep{00..09}/<opt_space>/`. Figures in `assets/fig04/`.
+`results/recovery_from_rand_images/rep{00..09}/<opt_space>/`. One script draws both panels of
+Figure 4 into `assets/fig04/`: the example noise targets and their feature-matched images
+(4A), and the pairwise identification accuracy across evaluation spaces (4B).
 
 ### Analysis 5 — ablation & preference analysis (Fig 5B, 5D, 5E, A2–A4)
 
@@ -139,26 +153,35 @@ for m in original_all AdamOnly_all VGGonly_all wo_SGLD_CLIP_all; do
 done
 bash scripts/experiments/preference_analysis/run_preference_analysis.sh
 
-uv run python scripts/create_figure_assets/Fig5_ablation_assets.py         # 5B, 5D, 5E
-uv run python scripts/create_figure_assets/Fig5_ablation_recon_panels.py   # A2-A4
-uv run python scripts/experiments/preference_analysis/preference_stats.py  # 5D/5E statistics
+uv run python scripts/create_figure_assets/Fig5_ablation_assets.py         # Fig 5B, 5D, 5E
+uv run python scripts/create_figure_assets/FigA2A4_ablation_recon_panels.py   # Fig A2, A3, A4
+uv run python scripts/experiments/preference_analysis/preference_stats.py  # table, not a figure
 ```
 
 The four condition trees and `ref_compare_{2,4}_*.pkl` stay under
-`results/rep_recon_image_koide-majima/`, the stats table next to them as
-`preference_stats.csv`; figures in `assets/fig05/`.
+`results/rep_recon_image_koide-majima/`. `Fig5_ablation_assets.py` writes subject 1's
+reconstructions under the four conditions, for five stimuli drawn from all 25 with a seed
+(5B), and the four-way and two-way preference results (5D, 5E) to `assets/fig05/`.
+`FigA2A4_ablation_recon_panels.py` writes one appendix panel per subject there — A2 for S1, A3
+for S2, A4 for S3 — each covering all 25 stimuli. `preference_stats.py` is not a figure: it prints the
+binomial tests and confidence intervals behind 5D and 5E, and writes them next to the
+pickles as `preference_stats.csv`.
 
 In the manuscript, A2–A4 carry a final reference row from a separate iCNN implementation
 (Wang et al., 2025), which is not part of this repository:
 <https://github.com/KamitaniLab/InterSiteNeuralCodeConversion> (archived at
-<https://doi.org/10.5281/zenodo.14910040>). `Fig5_ablation_recon_panels.py` omits that row
+<https://doi.org/10.5281/zenodo.14910040>). `FigA2A4_ablation_recon_panels.py` omits that row
 by default and draws the four ablation conditions only. To include it, generate those
 reconstructions separately and pass their directory:
 
 ```bash
-uv run python scripts/create_figure_assets/Fig5_ablation_recon_panels.py \
-    --deeprecon-root <dir with {TH,AM,ES}/VC/recon_image-<stimulus>.tiff>
+uv run python scripts/create_figure_assets/FigA2A4_ablation_recon_panels.py \
+    --deeprecon-root <dir with <subject>/VC/recon_image-<stimulus>.tiff> \
+    --deeprecon-subject-dirs <S1 dir> <S2 dir> <S3 dir>
 ```
+
+`--deeprecon-subject-dirs` is only needed if that tree names its subject directories
+differently from `S1`/`S2`/`S3`; the names are matched positionally against `--subjects`.
 
 ### Analysis 6 — SGLD sampling effect analysis (Fig 6B–E, A6)
 
@@ -175,35 +198,54 @@ done
 uv run python scripts/create_figure_assets/FigA6_sgld_systematic_assets.py
 ```
 
-Fig 6B contrasts `VC/` (after the 500 SGLD steps) with `VC/wo_lang/` (Adam only) from analysis 1.
-Fig 6C–E read analysis 3's trajectory pickles directly. The A6 summary lands in
-`results/sgld_effect_summary/original_all/{S1,S2,S3}.npz`; figures in `assets/fig06/`.
+Fig 6B contrasts `VC/` (after the 500 SGLD steps) with `VC/wo_lang/` (Adam only) from
+analysis 1, over the same subject and stimuli as Fig 5B, as its caption states. Fig 6C–E read
+analysis 3's trajectory pickles directly, and Fig A6 summarizes them over all subjects. The
+A6 summary lands in `results/sgld_effect_summary/original_all/{S1,S2,S3}.npz`; all four
+figures go to `assets/fig06/`.
 
 ### Analysis 7 — hyperparameter sweep analysis (Fig A5)
 
 ```bash
-bash scripts/experiments/run_oat_search_4gpu.sh              # 22 one-at-a-time conditions
-MODE=slice bash scripts/experiments/run_oat_search_4gpu.sh   # the 5x5 lr_a x T plane
+uv run python scripts/experiments/oat_search_SGD_SGLD_sampling_params.py --mode oat
+uv run python scripts/experiments/oat_search_SGD_SGLD_sampling_params.py --mode slice
 
 uv run python scripts/experiments/oat_dreamsim_matrices.py --root results/oat_sampling_params
 uv run python scripts/experiments/oat_dreamsim_matrices.py --root results/lr_a_T_slice
 
-uv run python scripts/create_figure_assets/Fig_oat_composite.py
+uv run python scripts/create_figure_assets/FigA5_oat_composite.py   # all four panels of Fig A5
 ```
 
-The sweep is the expensive one: 22 conditions × 3 subjects × 25 stimuli. Outputs go to
-`results/oat_sampling_params/` and `results/lr_a_T_slice/`, each with `dreamsim_matrices/*.npz`;
-figures to `assets/figA5/`. `Fig_oat_dreamsim_matrix.py` and `Fig_oat_slice_summary.py` draw
-the individual panels the composite is built from.
+The sweep is the expensive one. The two modes give 22 + 25 conditions sharing 9, i.e. 38
+unique settings, each reconstructing 25 stimuli × 3 subjects (`lr_a` is α in the manuscript).
+Outputs go to `results/oat_sampling_params/` and `results/lr_a_T_slice/`, each with
+`dreamsim_matrices/*.npz`.
+
+`--dry_run` prints the condition list and writes the manifest without reconstructing anything,
+which is the cheap way to see what a mode will do. To spread the work over several GPUs, run
+the same command once per device with `--num_shards N --shard_id I` and
+`CUDA_VISIBLE_DEVICES` set; `--resume` skips conditions already finished.
+`scripts/experiments/run_oat_search_4gpu.sh` is a four-GPU wrapper around exactly that.
+
+`FigA5_oat_composite.py` draws Figure A5 whole into `assets/figA5/`: example reconstructions
+per cluster (A), the condition × condition correlation matrix (B), raw matched vs null
+distance (C), and the null − matched gap (D). `Fig_oat_dreamsim_matrix.py` and
+`Fig_oat_slice_summary.py` are not manuscript figures — they render the sweep and the
+lr_a × T plane on their own, in more detail than the composite has room for.
 
 ### Analysis 8 — CPU/GPU determinism analysis (Fig A7)
+
+The upstream reconstruction seeds none of its random operations, so no two runs agree. This
+analysis runs on `recon_func_reproducible.py`, a seeded variant of those functions, which is
+what makes the question answerable: once the sampling is pinned, whatever difference remains
+is arithmetic.
 
 ```bash
 uv run python scripts/experiments/check_determinism.py --recon --device cpu
 uv run python scripts/experiments/check_determinism.py --recon --device cuda
 uv run python scripts/experiments/determinism_sweep.py
 
-uv run python scripts/create_figure_assets/Fig_determinism_cpu_vs_gpu.py
+uv run python scripts/create_figure_assets/FigA7_determinism_cpu_vs_gpu.py
 ```
 
 The figure needs both devices. CPU reconstruction is slow — shorten it with `--n-sgd` /
@@ -211,10 +253,13 @@ The figure needs both devices. CPU reconstruction is slow — shorten it with `-
 stimuli. Results under `results/determinism_check/` and `results/determinism_sweep/`;
 figure in `assets/figA7/`.
 
-## Seed-Reproducible Reconstruction
+The finding: on CPU two seeded runs are bit-identical. On GPU they are not, because the
+backward pass of bilinear interpolation (`grid_sampler_2d_backward_cuda`) accumulates
+gradients with `atomicAdd` in non-deterministic order, and the resulting float32 rounding
+differences amplify over optimization steps (~36.9 mean absolute pixel difference after 1500
+steps).
 
-The upstream reconstruction does not seed its random operations, so results differ across
-runs. A seeded variant is provided:
+The seeded variant also has a full reconstruction entry point of its own:
 
 ```bash
 uv run python scripts/experiments/recon_image_koide-majima_methods_multi_times_reproducible.py \
@@ -223,12 +268,6 @@ uv run python scripts/experiments/recon_image_koide-majima_methods_multi_times_r
 
 Each reconstruction derives its own seed as `sha256(base_seed | subject | targetID | iter_n)`,
 so runs are reproducible while iterations stay independent and shards can run in parallel.
-
-CPU reconstruction is then bit-identical across runs. GPU reconstruction is not: the backward
-pass of bilinear interpolation (`grid_sampler_2d_backward_cuda`) accumulates gradients with
-`atomicAdd` in non-deterministic order, and the resulting float32 rounding differences amplify
-over optimization steps (~36.9 mean absolute pixel difference after 1500 steps). Analysis 8
-reproduces this.
 
 **The figures in the paper were generated with the *unseeded* upstream code.** The seeded
 variant is a post-hoc diagnostic tool and was not used to produce the published results.
