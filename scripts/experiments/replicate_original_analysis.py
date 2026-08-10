@@ -12,7 +12,10 @@ from recon_utils import get_target_image, convert_featname
 import recon_func as recon_func
 
 
-def main(reconMethod="original", save_base_dir="./test"):
+RESULT_ROOT = "./results/rep_recon_image_koide-majima"
+
+
+def main(reconMethod="original_all", save_base_dir=f"{RESULT_ROOT}/original_all"):
     # %% https://colab.research.google.com/drive/1gaMoae0ntiT94-rQUMymkZboNc-imTzl#scrollTo=OFDZyEImrVE2&line=14&uniqifier=1
     # Load demo params
     with open("./scripts/config/demo_params.yaml", "rb") as f:
@@ -95,23 +98,15 @@ def main(reconMethod="original", save_base_dir="./test"):
     numReps = dt_cfg["recon_params"][reconMethod]["numReps"]
     similarity = dt_cfg["recon_params"][reconMethod]["similarity"]
 
-    if reconMethod == "Langevin" or reconMethod == "original":
-        lr_gamma = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_gamma"]
-        lr_a = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_a"]
-        lr_b = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_b"]
-        T_langevin = dt_cfg["recon_params"][reconMethod]["Langevin"]["T"]
     try:
-        lr_gamma = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_gamma"]
-        lr_a = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_a"]
-        lr_b = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_b"]
-        T_langevin = dt_cfg["recon_params"][reconMethod]["Langevin"]["T"]
-
-        print(lr_gamma)
-        print(lr_a)
-        print(lr_b)
-        print(T_langevin)
+        langevin = dt_cfg["recon_params"][reconMethod]["Langevin"]
+        lr_gamma = langevin["lr_gamma"]
+        lr_a = langevin["lr_a"]
+        lr_b = langevin["lr_b"]
+        T_langevin = langevin["T"]
     except KeyError as e:
         raise ValueError(f"Langevin config does not include: {e}")
+    print(f"Langevin: lr_gamma={lr_gamma} lr_a={lr_a} lr_b={lr_b} T={T_langevin}")
     # set parameters
     numReps_withoutLangevin = dt_cfg["recon_params"][reconMethod][
         "numReps_withoutLangevin"
@@ -338,6 +333,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # the first arugment is the method to use
     reconMethod = args.method
-    save_base_dir = f"./results/rep_recon_image_koide-majima/{reconMethod}"
+    save_base_dir = f"{RESULT_ROOT}/{reconMethod}"
     os.makedirs(save_base_dir, exist_ok=True)
     main(reconMethod, save_base_dir)

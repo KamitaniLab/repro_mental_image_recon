@@ -14,6 +14,18 @@ from typing import Iterable, Sequence
 from PIL import Image
 
 # Canonical ordering of the stimulus images used throughout the figures.
+#
+# The order is NOT the numeric order of the file names, and that is deliberate: it
+# is the order in which the reconstructions come out of `sorted()`. Reconstructions
+# are written as `recon_img_normalized-Img{NNNN}.jpg`, where NNNN is the imageryExpStim
+# number, while the stimulus that produced Img{NNNN} is `target_labels[targetID]` from
+# the mental_img_recon submodule -- and that list orders the natural images by ImageNet
+# id, not by stimulus number. The resulting pairing is
+#     Img0017 -> Stim18 goldfish   Img0020 -> Stim20 leopard
+#     Img0018 -> Stim19 iguana     Img0021 -> Stim17 goat
+#     Img0019 -> Stim21 swan       Img0022..0026 -> Stim22..26
+# so listing the names in this order makes index i here match index i of the sorted
+# reconstruction files, which is what `recon_lookup` relies on. Keep them in sync.
 SOURCE_IMAGE_NAMES: tuple[str, ...] = (
     "imageryExpStim01_red_smallring.tiff",
     "imageryExpStim02_red_+.tiff",
@@ -113,10 +125,20 @@ def collect_image_paths(
 def recon_lookup(recon_dir: Path, expected_names: Sequence[str]) -> dict[str, Path]:
     """Map each stimulus name in ``expected_names`` to its reconstruction path.
 
-    Reconstructions are expected to share the same stem as the stimulus (e.g.
-    ``imageryExpStim01_red_smallring``) but typically use a ``.jpg`` extension.
-    The function considers both JPG and PNG files. An informative error is raised
-    when files are missing or duplicated.
+    Two matching strategies, in order:
+
+    1. by stem -- used when the reconstructions are named after the stimulus (e.g.
+       ``imageryExpStim01_red_smallring.jpg``);
+    2. by position -- the reconstruction pipeline names its output by stimulus index
+       (``recon_img_normalized-Img0017.jpg``) rather than by stem, so this is the
+       usual path. ``SOURCE_IMAGE_NAMES`` is ordered to match the sorted
+       reconstruction file names (see its definition), making index i of one the
+       index i of the other.
+
+    Positional matching is only valid for a complete directory: a partial run would
+    shift every stimulus after the gap and silently produce a figure whose targets
+    and reconstructions do not correspond. It therefore requires the full set and
+    raises otherwise.
     """
     recon_dir = Path(recon_dir)
     candidates = list(recon_dir.glob("*.jpg")) + list(recon_dir.glob("*.png"))
@@ -143,26 +165,22 @@ def recon_lookup(recon_dir: Path, expected_names: Sequence[str]) -> dict[str, Pa
 
     if missing:
         sorted_candidates = sorted(candidates, key=lambda path: path.name)
-        canonical_map: dict[str, Path] = {}
-        for idx, candidate in enumerate(sorted_candidates):
-            if idx >= len(SOURCE_IMAGE_NAMES):
-                break
-            canonical_map[SOURCE_IMAGE_NAMES[idx]] = candidate
+        if len(sorted_candidates) != len(SOURCE_IMAGE_NAMES):
+            raise FileNotFoundError(
+                f"Cannot match reconstructions in {recon_dir} by name "
+                f"(no file named after {', '.join(missing)}), and matching by position "
+                f"needs the complete set of {len(SOURCE_IMAGE_NAMES)} reconstructions "
+                f"but found {len(sorted_candidates)}. Re-run the reconstruction for "
+                f"this condition before drawing the figure."
+            )
+        canonical_map = dict(zip(SOURCE_IMAGE_NAMES, sorted_candidates))
 
-        fallback: dict[str, Path] = {}
-        unresolved: list[str] = []
-        for name in expected_names:
-            mapped = canonical_map.get(name)
-            if mapped is None:
-                unresolved.append(name)
-            else:
-                fallback[name] = mapped
-
+        unresolved = [name for name in expected_names if name not in canonical_map]
         if unresolved:
             raise FileNotFoundError(
                 "Missing reconstructions for stimuli: " + ", ".join(unresolved)
             )
-        return fallback
+        return {name: canonical_map[name] for name in expected_names}
     return lookup
 
 

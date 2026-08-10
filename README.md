@@ -69,7 +69,9 @@ To run analyses that require imagery (Units 1–4, 6–7), you must provide the 
    ```bash
    unzip imageryExpStim.zip -d data/
    ```
-   This populates `data/ImageryDeeprecon/source/` with the 25 target images.
+   This populates `data/source/` with `imageryExpStim01_*.tiff` … `imageryExpStim26_*.tiff`
+   (26 files; `imageryExpStim16_fixation.tiff` is not a reconstruction target, so the
+   analyses use the remaining 25). Set `IMAGERY_SOURCE_DIR` to override this location.
 
 **Analyses that do NOT require imagery** (self-contained, can run immediately):
 - Unit 5 (Circular evaluation): uses noise-generated targets

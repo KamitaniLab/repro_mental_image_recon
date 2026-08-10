@@ -1,8 +1,8 @@
-"""Generate figure assets for Figure 2C (target vs reconstructed images).
+"""Generate figure assets for Figures 2C and A1 (target vs reconstructed images).
 
-This script consolidates the logic that previously lived in the Jupyter
-notebook. Running it will regenerate the publication-ready panels stored under
-``assets/fig02``.
+Both panels come from the same reconstructions and differ only in how many stimuli
+they show: Figure 2C the four stimuli cleared for publication, Figure A1 all 25.
+Running this regenerates both under ``assets/fig02``.
 """
 
 from __future__ import annotations
@@ -27,8 +27,8 @@ OUTPUT_DIR = ensure_directory(PROJECT_ROOT / "assets" / "fig02")
 
 # Dataset metadata
 CONDITION_KEY = "original_all"
-COMPARISON_LABEL = "Koide-Majima"
-# copyright-safe subset of images for Figure 2
+# The four stimuli cleared for publication; the full set is shown in Figure A1,
+# which is only reproducible locally by whoever holds the stimulus images.
 RANDOM_SELECTION = (
     "imageryExpStim18_anat_goldfish.tiff",
     "imageryExpStim21_anat_swan.tiff",
@@ -62,7 +62,7 @@ def generate_full_panel() -> None:
         max_column_size=15,
     )
     panel = drawer.draw()
-    panel.save(OUTPUT_DIR / "FigS1_recon_image_all.pdf")
+    panel.save(OUTPUT_DIR / "FigA1_recon_image_all.pdf")
 
 
 def generate_random_subset_panel() -> None:
