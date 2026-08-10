@@ -2,7 +2,8 @@
 
 Each panel stacks the target stimuli on top of the reconstructions obtained under the
 four ablation conditions, one row per condition: one panel per subject over all 25
-stimuli (A2 = S1, A3 = S2, A4 = S3), plus a compact hand-picked variant.
+stimuli (A2 = S1, A3 = S2, A4 = S3). The five-stimulus panel of Figure 5B comes from
+Fig5_ablation_assets.py, which draws its stimuli with a seed.
 
 The manuscript's A2-A4 also carry a reference row from a separate iCNN implementation.
 Those reconstructions are produced outside this repository, so the row is drawn only
@@ -11,9 +12,8 @@ conditions alone.
 
 Examples
 --------
-    python Fig5_ablation_recon_panels.py                    # both panels, S1/S2/S3
-    python Fig5_ablation_recon_panels.py --panel selected   # hand-picked stimuli only
-    python Fig5_ablation_recon_panels.py --subjects S2      # single subject
+    python Fig5_ablation_recon_panels.py                        # S1/S2/S3
+    python Fig5_ablation_recon_panels.py --subjects S2          # single subject
     python Fig5_ablation_recon_panels.py --deeprecon-root DIR   # add the reference row
 """
 from __future__ import annotations
@@ -54,21 +54,7 @@ DEEPRECON_SUBJECT_MAP = {"S1": "TH", "S2": "AM", "S3": "ES"}
 # One appendix figure per subject.
 APPENDIX_FIGURE = {"S1": "A2", "S2": "A3", "S3": "A4"}
 
-# Hand-picked stimuli used for the compact panel (one artificial shape plus
-# four natural images), in the order they appear in the published figure.
-SELECTED_IMAGE_NAMES = (
-    "imageryExpStim15_black_X.tiff",
-    "imageryExpStim20_anat_leopard.tiff",
-    "imageryExpStim17_anat_goat.tiff",
-    "imageryExpStim22_inat_airliner.tiff",
-    "imageryExpStim23_inat_bowling.tiff",
-)
-
-PANEL_SPECS = {
-    "compare": (SOURCE_IMAGE_NAMES, "Fig{appendix}_{subject}_recon_image_compare.pdf"),
-    # Not a numbered manuscript figure, so it keeps a descriptive name.
-    "selected": (SELECTED_IMAGE_NAMES, "ablation_recon_image_selected_{subject}.pdf"),
-}
+PANEL_FILENAME = "Fig{appendix}_{subject}_recon_image_compare.pdf"
 
 
 def load_deeprecon_images(
@@ -133,12 +119,6 @@ def export_panel(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
-        "--panel",
-        choices=(*PANEL_SPECS, "all"),
-        default="all",
-        help="which panel set to export (default: all)",
-    )
-    parser.add_argument(
         "--subjects",
         nargs="+",
         default=list(SUBJECTS),
@@ -170,16 +150,17 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     output_dir = ensure_directory(args.output_dir)
-    panels = list(PANEL_SPECS) if args.panel == "all" else [args.panel]
-    deeprecon_root = args.deeprecon_root
 
-    for panel in panels:
-        image_names, filename = PANEL_SPECS[panel]
-        for subject in args.subjects:
-            saved = export_panel(
-                subject, image_names, filename, args.recon_root, output_dir, deeprecon_root
-            )
-            print(f"saved {saved}")
+    for subject in args.subjects:
+        saved = export_panel(
+            subject,
+            SOURCE_IMAGE_NAMES,
+            PANEL_FILENAME,
+            args.recon_root,
+            output_dir,
+            args.deeprecon_root,
+        )
+        print(f"saved {saved}")
 
 
 if __name__ == "__main__":
