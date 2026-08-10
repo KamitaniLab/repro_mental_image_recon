@@ -184,11 +184,6 @@ def main(reconMethod='original_all', save_base_dir = './test', seed=None,
                 # subset produces the same filenames as the full sweep.
                 recon_name = f"Stim{targetID+1:02}_{targetimname}"
                 true_image_dir = f'./data/ImageryDeeprecon/source'
-                os.makedirs(true_image_dir, exist_ok=True)
-                save_true_image = f'{true_image_dir}/{recon_name}.tiff'
-                Image.fromarray(targetImg_).save(save_true_image)
-                
-                
                 # VGG
                 list_path_vgg = list()
                 for t_layername in used_layers_VGG:

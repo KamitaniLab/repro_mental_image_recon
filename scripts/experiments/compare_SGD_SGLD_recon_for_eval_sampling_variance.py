@@ -134,10 +134,6 @@ def main(reconMethod="original", save_base_dir="./test"):
             targetImg_, targetimname = get_target_image(targetID, targetimpath)
             recon_name = f"Stim{i + 1:02}_{targetimname}"
             true_image_dir = "./data/ImageryDeeprecon/source"
-            os.makedirs(true_image_dir, exist_ok=True)
-            save_true_image = f"{true_image_dir}/{recon_name}.tiff"
-            Image.fromarray(targetImg_).save(save_true_image)
-
             # VGG
             list_path_vgg = list()
             for t_layername in used_layers_VGG:

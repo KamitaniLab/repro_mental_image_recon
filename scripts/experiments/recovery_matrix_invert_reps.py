@@ -12,7 +12,7 @@ reuses its build_space()/invert_one() and constants.
 Example (one rep):
   CUDA_VISIBLE_DEVICES=0 uv run python scripts/experiments/recovery_matrix_invert_reps.py \
       --opt_space clip_vitb32 --no_crop --seed 100 \
-      --out_root results/recovery_nocrop25_reps/rep00
+      --out_root results/recovery_from_rand_images/rep00
 """
 import os
 import sys
