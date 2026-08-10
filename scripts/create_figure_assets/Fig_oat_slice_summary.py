@@ -113,7 +113,6 @@ def main() -> None:
     ref_oat = oat[REFERENCE_TAG][0]
     ref_slice = slc[REFERENCE_TAG][0]
     ref_lo, ref_hi = sorted((ref_oat, ref_slice))
-    ref_gap = ref_slice  # panel A plane is the slice run
 
     # --- collect the other OAT knobs for panel B ---
     rows = []

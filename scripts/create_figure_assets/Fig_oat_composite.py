@@ -20,12 +20,11 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.lines import Line2D
 
 from figure_asset_utils import ensure_directory, load_recon_images, load_target_images, project_root
 from Fig_oat_dreamsim_matrix import (
-    CLUSTER_COLORS, PARAM_SEQUENCE, REFERENCE_TAG, classify_condition,
-    cluster_order, load_conditions, parse_fields, pretty_label,
+    CLUSTER_COLORS, REFERENCE_TAG, cluster_order, load_conditions, parse_fields,
+    pretty_label,
 )
 
 PROJECT_ROOT = project_root()

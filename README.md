@@ -56,12 +56,12 @@ All analyses are organized by **analysis unit** (pipeline), each producing one o
 | 5 | Circular evaluation / recovery matrix | 4A, 4B | ❌ No | `run_recovery_reps.sh` (drives `recovery_matrix_invert_reps.py` + `recovery_check_eval.py`) | `Fig_recon_and_identification_errorbar.py` |
 | 6 | SGLD/CLIP ablation | 5B, 5D, 5E, A2–A4 | ✅ Yes | `replicate_original_analysis.py` ×4 conditions → `preference_analysis/run_preference_analysis.sh` | `Fig5_ablation_assets.py`, `Fig5_ablation_recon_panels.py`, `preference_analysis/preference_stats.py` |
 | 7 | SGLD sampling effect | 6B–E, A6 | ✅ Yes | Units 1 and 3 outputs → `sgld_effect_summary.py <subject>` | `Fig6_sgld_effect_assets.py`, `Fig6_sgld_effect_diagnostic_assets.py`, `FigA6_sgld_systematic_assets.py` |
-| 8 | SGLD hyperparameter sweep (OAT) | A5 | ❌ No | `oat_search_SGD_SGLD_sampling_params.py` + `oat_dreamsim_matrices.py` | `Fig_oat_composite.py`, `Fig_oat_dreamsim_matrix.py`, `Fig_oat_slice_summary.py` |
+| 8 | SGLD hyperparameter sweep | A5 | ✅ Yes | `run_oat_search_4gpu.sh` (`MODE=oat`, then `MODE=slice`) + `oat_dreamsim_matrices.py` for each | `Fig_oat_composite.py`, `Fig_oat_dreamsim_matrix.py`, `Fig_oat_slice_summary.py` |
 | 9 | CPU/GPU determinism | A7 | ❌ No | `check_determinism.py` + `determinism_sweep.py` | `Fig_determinism_cpu_vs_gpu.py` |
 
 ### Imagery stimuli setup
 
-To run analyses that require imagery (Units 1–4, 6–7), you must provide the imagery target stimuli:
+To run analyses that require imagery (Units 1, 2, 3, 6, 7, 8), you must provide the imagery target stimuli:
 
 1. Contact the authors: **shirakawaken0118@gmail.com** to obtain `imageryExpStim.zip`
 2. Extract into the `data/` directory:
@@ -74,22 +74,18 @@ To run analyses that require imagery (Units 1–4, 6–7), you must provide the 
 
 **Analyses that do NOT require imagery** (self-contained, can run immediately):
 - Unit 5 (Circular evaluation): uses noise-generated targets
-- Unit 8 (OAT hyperparameter sweep): uses noise-generated targets  
-- Unit 9 (CPU/GPU determinism): uses noise-generated targets
+- Unit 9, the `forward` / `backward` determinism checks: use a fixed synthetic image.
+  The `--recon` check and `determinism_sweep.py` do need the decoded features and stimuli.
 
 ### Example workflow
 
-**For users WITHOUT imagery** (Units 5, 8, 9 only):
+**For users WITHOUT imagery** (Unit 5, and the cheap determinism checks):
 ```bash
 # Circular evaluation with noise targets (Unit 5)
 # 10 repetitions x 4 optimization spaces; each is a full inversion + evaluation.
 bash scripts/experiments/run_recovery_reps.sh
 uv run python scripts/create_figure_assets/Fig_recon_and_identification_errorbar.py \
     --reps_root results/recovery_from_rand_images --err sd
-
-# OAT hyperparameter sweep (Unit 8)
-uv run python scripts/experiments/oat_search_SGD_SGLD_sampling_params.py
-uv run python scripts/experiments/oat_dreamsim_matrices.py
 
 # CPU/GPU determinism check (Unit 9)
 uv run python scripts/experiments/check_determinism.py --device cpu
@@ -122,7 +118,7 @@ Each figure in the manuscript can be regenerated from the code. Below are the mi
 | **4A, 4B** | (None) | `bash scripts/experiments/run_recovery_reps.sh` | `results/recovery_from_rand_images/rep{00..09}/<opt_space>/` (`source/`, `recovered/`, `recovery_check_identification.pkl`) | `uv run python scripts/create_figure_assets/Fig_recon_and_identification_errorbar.py --reps_root results/recovery_from_rand_images --err sd` | `assets/fig04/` |
 | **5B, 5D, 5E** | Imagery | `for m in original_all AdamOnly_all VGGonly_all wo_SGLD_CLIP_all; do uv run python scripts/experiments/replicate_original_analysis.py $m; done && bash scripts/experiments/preference_analysis/run_preference_analysis.sh` | `results/rep_recon_image_koide-majima/` (four condition trees + `ref_compare_{2,4}_*.pkl`) | `uv run python scripts/create_figure_assets/Fig5_ablation_assets.py` and `uv run python scripts/experiments/preference_analysis/preference_stats.py` | `assets/fig05/`; stats table to `results/rep_recon_image_koide-majima/preference_stats.csv` |
 | **A2–A4** | Imagery | (same four conditions as above) | `results/rep_recon_image_koide-majima/` | `uv run python scripts/create_figure_assets/Fig5_ablation_recon_panels.py` | `assets/fig05/` |
-| **A5** | (None) | `uv run python scripts/experiments/oat_search_SGD_SGLD_sampling_params.py && uv run python scripts/experiments/oat_dreamsim_matrices.py` | `results/oat_sampling_params/` | `uv run python scripts/create_figure_assets/Fig_oat_composite.py` | `assets/figA5/` |
+| **A5** | Imagery | `bash scripts/experiments/run_oat_search_4gpu.sh` then `MODE=slice bash scripts/experiments/run_oat_search_4gpu.sh`, then `oat_dreamsim_matrices.py` once per root | `results/oat_sampling_params/`, `results/lr_a_T_slice/` (each with `dreamsim_matrices/*.npz`) | `uv run python scripts/create_figure_assets/Fig_oat_composite.py` | `assets/figA5/` |
 | **6B** | Imagery | (Unit 1 output; `VC/` is post-SGLD and `VC/wo_lang/` pre-SGLD) | `results/rep_recon_image_koide-majima/original_all/` | `uv run python scripts/create_figure_assets/Fig6_sgld_effect_assets.py` | `assets/fig06/` |
 | **6C–E** | Imagery | (Unit 3 output; the pickles hold the 500-step SGLD trajectory) | `results/rep_recon_image_koide-majima_recon_variability_no_seed/` | `uv run python scripts/create_figure_assets/Fig6_sgld_effect_diagnostic_assets.py` | `assets/fig06/` |
 | **A6** | Imagery | `for s in S1 S2 S3; do uv run python scripts/experiments/sgld_effect_summary.py $s; done` (one subject per run — the trajectory pickles are ~670 MB each) | `results/sgld_effect_summary/original_all/{S1,S2,S3}.npz` | `uv run python scripts/create_figure_assets/FigA6_sgld_systematic_assets.py` | `assets/fig06/`; summary table to `results/sgld_effect_summary/original_all/` |

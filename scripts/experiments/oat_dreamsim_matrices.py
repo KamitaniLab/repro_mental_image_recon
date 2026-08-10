@@ -20,6 +20,7 @@ Results go to one ``.npz`` per condition holding the per-subject matrices, so th
 figure script can recompute any summary without touching the images again.
 
     python scripts/experiments/oat_dreamsim_matrices.py
+    python scripts/experiments/oat_dreamsim_matrices.py --root results/lr_a_T_slice
     python scripts/experiments/oat_dreamsim_matrices.py --tags lr_a1_... --overwrite
 """
 from __future__ import annotations
@@ -44,7 +45,6 @@ sys.path.append(mental_img_recon_dir)
 from recon_utils import get_target_image  # noqa: E402
 
 DEFAULT_ROOT = PROJECT_ROOT / "results" / "oat_sampling_params"
-DEFAULT_OUT = DEFAULT_ROOT / "dreamsim_matrices"
 SUBJECTS = ("S1", "S2", "S3")
 N_TARGETS = 25
 
@@ -67,7 +67,9 @@ def recon_dir(root: Path, tag: str, subject: str) -> Path:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=DEFAULT_ROOT)
-    parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT)
+    parser.add_argument("--out-dir", type=Path, default=None,
+                        help="default: <root>/dreamsim_matrices, so pointing --root at "
+                             "the lr_a x T slice writes that run's matrices, not the OAT one")
     parser.add_argument("--tags", nargs="*", default=None,
                         help="condition directory names (default: all under --root)")
     parser.add_argument("--subjects", nargs="+", default=list(SUBJECTS),
@@ -75,6 +77,8 @@ def main() -> None:
     parser.add_argument("--overwrite", action="store_true",
                         help="recompute conditions whose .npz already exists")
     args = parser.parse_args()
+    if args.out_dir is None:
+        args.out_dir = args.root / "dreamsim_matrices"
     subjects = tuple(args.subjects)
 
     from dreamsim import dreamsim
