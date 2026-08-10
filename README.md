@@ -31,13 +31,18 @@ The repository collects scripts to re-run the imagery reconstruction analyses an
    git submodule update --init --recursive
    ```
 
-3. **Set up Python 3.12 environment**
+3. **Set up the Python environment**
    ```bash
-   uv python install 3.12
-   uv venv --python 3.12
+   uv python install
+   uv venv
    source .venv/bin/activate
    uv sync --locked
    ```
+   `.python-version` pins the interpreter to the 3.12.11 these analyses were run
+   with, so both commands pick it up with no `--python` argument; `uv python
+   install` fetches that build if it is not already present. `pyproject.toml`
+   accepts any 3.12.x (`requires-python = ">=3.12, <3.13"`), but the locked
+   environment is the one described under *Validated environment* above.
 
 4. **Download brain features and model weights**
    ```bash
