@@ -16,6 +16,7 @@ import pickle
 
 from fig_utils import GroupImageDrawer
 from figure_asset_utils import (
+    SOURCE_IMAGE_NAMES,
     ensure_directory,
     load_recon_images,
     load_target_images,
@@ -33,29 +34,13 @@ COMPARISON_CONDITIONS = {
     "w/o CLIP": "VGGonly_all",
     "w/o Baye and CLIP": "wo_SGLD_CLIP_all",
 }
-# Stimuli cleared for publication, spanning both artificial and natural images.
-# Panel B draws RANDOM_COUNT of these; keep the pool larger than the count, or the
-# draw is a permutation of the whole pool and the seed stops meaning anything.
-RANDOM_POOL = (
-    "imageryExpStim01_red_smallring.tiff",
-    "imageryExpStim02_red_+.tiff",
-    "imageryExpStim04_green_smallring.tiff",
-    "imageryExpStim05_green_+.tiff",
-    "imageryExpStim07_blue_smallring.tiff",
-    "imageryExpStim08_blue_+.tiff",
-    "imageryExpStim10_white_smallring.tiff",
-    "imageryExpStim11_white_+.tiff",
-    "imageryExpStim18_anat_goldfish.tiff",
-    "imageryExpStim21_anat_swan.tiff",
-    "imageryExpStim24_inat_post.tiff",
-    "imageryExpStim25_inat_stainedglass.tiff",
-    "imageryExpStim26_inat_umbrella.tiff",
-)
+# Panel B draws RANDOM_COUNT stimuli from the full set of 25, as the caption states.
+# The pool must stay larger than the count: drawing n of n is a permutation, and the
+# result is sorted, so the seed would have no effect on which stimuli appear.
+RANDOM_POOL = SOURCE_IMAGE_NAMES
 
 RANDOM_COUNT = 5
-# Chosen so the draw reproduces the stimuli in the published panel: red ring, blue +,
-# goldfish, swan, stained glass.
-RANDOM_SEED = 1893
+RANDOM_SEED = 42
 
 PREFERENCE_MODELS = ("dreamsim", "alexnet", "RN50", "lpips")
 PREFERENCE_PREFIX_FOUR = "ref_compare_4"
