@@ -17,6 +17,21 @@ The repository collects scripts to re-run the imagery reconstruction analyses an
 - PyTorch 2.9.0 built against CUDA 12.8 (`cu128` wheels)
 - GPU: GeForce RTX 3090 (24GB)
 
+## Disk
+
+Roughly 8.3 GB is downloaded before anything runs:
+
+| What | Download | On disk | Fetched by |
+|---|---|---|---|
+| Decoded brain features | 1.7 GB | 3.6 GB | `setup_resources.sh` |
+| VQGAN weights + config | 958 MB | 958 MB | `setup_resources.sh` |
+| DreamSim weights | 3.8 GB | 3.8 GB | the `dreamsim` package, on first use |
+| Imagery target stimuli | 7 MB | 7 MB | by request, see step 5 |
+
+`results/` then grows with what you run, and is much larger than the inputs. Analysis 3
+is the extreme: it keeps the full 500-step SGLD trajectory, at ~670 MB per stimulus and
+repetition. Analysis 7's sweep writes 38 conditions × 25 stimuli × 3 subjects.
+
 ## Quick Start
 
 1. **Install `uv`**
@@ -48,18 +63,47 @@ The repository collects scripts to re-run the imagery reconstruction analyses an
    ```bash
    uv run bash setup_resources.sh
    ```
-   This fetches decoded fMRI features and pretrained VQGAN weights from the original repository.
+   This fetches the decoded fMRI features published with Koide-Majima et al. (2024)
+   and the pretrained VQGAN weights. Both downloads are checked against a sha256 and
+   are skipped if a verified copy is already there, so an interrupted run can simply
+   be repeated. Afterwards:
+
+   ```
+   lib/mental_img_recon/content/mental_img_recon/features/
+       decoded_features/{S01,S02,S03}/{VGG19,CLIP_ViT-B_32}/<layer>/   1448 files
+       meanDNNfeature/{VGG19,CLIP_ViT-B_32,...}/
+   lib/taming-transformers/logs/vqgan_imagenet_f16_1024/
+       checkpoints/last.ckpt                                           958 MB
+       configs/model.yaml
+   ```
+
+   A third download is **not** part of this script: the `dreamsim` package fetches its
+   own weights (~3.8 GB) into `./models/` the first time an evaluation script calls it,
+   which is why that directory appears without being mentioned anywhere. It is relative
+   to the working directory, so run everything from the repository root and it stays in
+   one place. Analyses 2, 4, 5 and 7 trigger it; the reconstruction itself does not.
 
 5. **Obtain the imagery target stimuli**
 
-   They are excluded from this repository due to copyright. Contact
-   kamitanilab@gmail.com for `imageryExpStim.zip`, then:
+   They are excluded from this repository due to copyright, and this is the one step
+   that cannot be completed by downloading: contact kamitanilab@gmail.com for
+   `imageryExpStim.zip`, then:
    ```bash
    unzip imageryExpStim.zip -d data/
    ```
    This populates `data/source/` with `imageryExpStim01_*.tiff` … `imageryExpStim26_*.tiff`
-   (`imageryExpStim16_fixation.tiff` is not a reconstruction target, so the analyses use the
-   remaining 25). Set `IMAGERY_SOURCE_DIR` to keep them elsewhere.
+   (26 files; `imageryExpStim16_fixation.tiff` is not a reconstruction target, so the
+   analyses use the remaining 25). Set `IMAGERY_SOURCE_DIR` to keep them elsewhere.
+
+   **Most of the pipeline does not need them.** The reconstruction identifies its target
+   by label, from `target_labels.yaml` in the `mental_img_recon` submodule, and never
+   reads the stimulus pixels. So without the stimuli you can still run:
+
+   - every reconstruction — analyses 1, 3, 5 and 7
+   - analysis 4 end to end, since its targets are generated RGB noise
+
+   The stimuli are required to *evaluate* a reconstruction against its target, and to
+   draw any panel that shows one: figures 2C–2E, 3A, 5B, 5D, 5E, 6B, A1–A5.
 
 Run every command from the repository root: the scripts resolve `scripts/config/*.yaml`
 relative to the working directory.
