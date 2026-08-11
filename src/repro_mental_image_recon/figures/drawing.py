@@ -1,6 +1,23 @@
-from PIL import Image, ImageDraw, ImageFont
 import math
+
 import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+# Panel labels are drawn in DejaVu Sans Bold, which Pillow resolves by name from the
+# system font path. A minimal container without fonts-dejavu installed has none, so fall
+# back to the font Pillow ships: the labels lose their weight rather than the figure
+# failing to render.
+_TITLE_FONT_NAME = "DejaVuSans-Bold.ttf"
+
+
+def _label_font(size):
+    """The panel-label font at `size`, or Pillow's default when `size` is None."""
+    if size is None:
+        return ImageFont.load_default()
+    try:
+        return ImageFont.truetype(_TITLE_FONT_NAME, size)
+    except OSError:
+        return ImageFont.load_default(size)
 
 
 class GroupImageDrawer:
@@ -116,7 +133,7 @@ class GroupImageDrawer:
                     image_obj = self._expand_to_square(image_obj)
                 image_obj = image_obj.resize(self.image_size, Image.LANCZOS)
 
-                # 画像位置の計算
+                # Where this image goes in the grid
                 row_index, column_index, turn_index = self._calculate_image_position(
                     cind, tind, column_size
                 )
@@ -152,11 +169,7 @@ class GroupImageDrawer:
                 x += turn_index * (self.group_margin[0] + self.group_margin[2])
                 x += self.title_top_padding
                 y = self.title_left_padding
-                font = (
-                    ImageFont.load_default()
-                    if self.title_fontsize is None
-                    else ImageFont.truetype("DejaVuSans-Bold.ttf", self.title_fontsize)
-                )
+                font = _label_font(self.title_fontsize)
                 draw.text((y, x), title, fill=self.title_fontcolor[cind], font=font)
 
     def _draw_image_ids(self, draw, total_image_size, column_size):
@@ -178,11 +191,7 @@ class GroupImageDrawer:
                 + column_index
                 * (self.image_size[1] + self.image_margin[1] + self.image_margin[3])
             )
-            font = (
-                ImageFont.load_default()
-                if self.title_fontsize is None
-                else ImageFont.truetype("DejaVuSans-Bold.ttf", self.title_fontsize)
-            )
+            font = _label_font(self.title_fontsize)
             draw.text(
                 (y, x), self.image_id_list[tind], fill=self.id_fontcolor, font=font
             )

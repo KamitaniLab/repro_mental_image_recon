@@ -2,6 +2,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Run this through `uv run bash`, as the README does, or with the venv activated:
+# a bare `python` is whatever is on PATH. Override with PYTHON=... if neither fits.
 PYTHON_BIN="${PYTHON:-python}"
 EXTRA_ARGS=("$@")
 

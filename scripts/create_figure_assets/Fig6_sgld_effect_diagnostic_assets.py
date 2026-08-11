@@ -1,13 +1,20 @@
-"""Generate sampling analysis figure for Figure 5C-E."""
+"""Generate the sampling-analysis figure for Figure 6C-E.
+
+One SGLD chain from the seed-free repeat runs: latent and pixel traces (C),
+histograms of their within-chain standard deviation (D), and the
+coordinate-averaged autocorrelation (E).
+"""
 
 from __future__ import annotations
 
+import argparse
+import pickle
 from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
-import pickle
 
-from figure_asset_utils import (
+from repro_mental_image_recon.figures.assets import (
     ensure_directory,
     project_root,
 )
@@ -16,9 +23,8 @@ PROJECT_ROOT = project_root()
 RECON_ROOT = (
     PROJECT_ROOT / "results" / "rep_recon_image_koide-majima_recon_variability_no_seed"
 )
-OUTPUT_PATH = (
-    ensure_directory(PROJECT_ROOT / "assets" / "fig05") / "fig05_sampling_part.pdf"
-)
+OUTPUT_DIR = PROJECT_ROOT / "assets" / "fig06"
+OUTPUT_NAME = "Fig6CDE_sampling_analysis.pdf"
 
 CONDITION_KEY = "original_all"
 SUBJECT_ID = "S2"
@@ -29,12 +35,12 @@ TRACE_SAMPLE_COUNT = 3
 TRACE_SEED = 10
 
 
-def _trace_directory(iteration: str) -> Path:
-    return RECON_ROOT / CONDITION_KEY / SUBJECT_ID / iteration / "VC"
+def _trace_directory(recon_root: Path, iteration: str) -> Path:
+    return recon_root / CONDITION_KEY / SUBJECT_ID / iteration / "VC"
 
 
-def _resolve_trace_path(iteration: str, stimulus_index: int) -> Path:
-    trace_dir = _trace_directory(iteration)
+def _resolve_trace_path(recon_root: Path, iteration: str, stimulus_index: int) -> Path:
+    trace_dir = _trace_directory(recon_root, iteration)
     pkl_files = sorted(trace_dir.glob("*.pkl"))
     if not pkl_files:
         raise FileNotFoundError(f"No trace files found under {trace_dir}")
@@ -43,8 +49,8 @@ def _resolve_trace_path(iteration: str, stimulus_index: int) -> Path:
     return pkl_files[stimulus_index]
 
 
-def _load_trace_arrays() -> tuple[np.ndarray, np.ndarray]:
-    trace_path = _resolve_trace_path(ITERATION, STIMULUS_INDEX)
+def _load_trace_arrays(recon_root: Path) -> tuple[np.ndarray, np.ndarray]:
+    trace_path = _resolve_trace_path(recon_root, ITERATION, STIMULUS_INDEX)
     with trace_path.open("rb") as handle:
         data = pickle.load(handle)
 
@@ -80,8 +86,8 @@ def _plot_autocorr(ax, mean: np.ndarray, std: np.ndarray, title: str) -> None:
     ax.set_title(title)
 
 
-def export_sampling_analysis() -> None:
-    latent_traces, pixel_traces = _load_trace_arrays()
+def export_sampling_analysis(recon_root: Path, output_dir: Path) -> Path:
+    latent_traces, pixel_traces = _load_trace_arrays(recon_root)
     latent_std = latent_traces.std(axis=0)
     pixel_std = pixel_traces.std(axis=0)
 
@@ -140,12 +146,24 @@ def export_sampling_analysis() -> None:
     _plot_autocorr(axes[2, 1], pixel_mean, pixel_sd, "Pixel autocorrelation")
 
     fig.tight_layout()
-    fig.savefig(OUTPUT_PATH)
+    output_path = output_dir / OUTPUT_NAME
+    fig.savefig(output_path)
     plt.close(fig)
+    return output_path
 
 
 def main() -> None:
-    export_sampling_analysis()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--recon-root",
+        type=Path,
+        default=RECON_ROOT,
+        help="root of the seed-free repeat runs",
+    )
+    parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR)
+    args = parser.parse_args()
+    saved = export_sampling_analysis(args.recon_root, ensure_directory(args.output_dir))
+    print(f"saved {saved}")
 
 
 if __name__ == "__main__":

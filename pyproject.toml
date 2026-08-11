@@ -1,7 +1,7 @@
 [project]
 name = "repro_mental_image_recon"
 version = "0.1.0"
-description = "Add your description here"
+description = "Reanalysis of mental image reconstruction in Koide-Majima et al. (Neural Networks, 2024): reconstruction, ablation and evaluation pipelines behind the manuscript figures"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.12, <3.13"
@@ -39,16 +39,42 @@ dependencies = [
     "bdpy",
     "clip",
     "ruff>=0.5.0",
+    "pytest>=8.0.0",
+    "pyarrow>=18,<21",
 ]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+# Pinned so `ruff check` gives the same verdict on a future ruff release as it
+# does on the version this repository was cleaned with.
+target-version = "py312"
+
+[tool.ruff.lint]
+# ruff's defaults (pyflakes + the pycodestyle errors that matter), plus import
+# sorting and the pyupgrade rewrites. `ruff check` and `ruff format --check` are
+# both clean at this setting.
+select = ["E4", "E7", "E9", "F", "I", "UP"]
 
 [tool.uv.sources]
 taming-transformers = { path = "lib/taming-transformers" }
-mental-img-recon = { path = "lib/mental_img_recon" }
+# editable: the source is a submodule, so the installed code must follow whatever
+# commit lib/mental_img_recon is checked out at. A non-editable install snapshots
+# it at build time and keeps serving the old modules after a submodule update.
+mental-img-recon = { path = "lib/mental_img_recon", editable = true }
 bdpy = { git = "https://github.com/KamitaniLab/bdpy.git", rev = "d86199f"}
 clip = { git = "https://github.com/openai/CLIP.git", rev = "dcba3cb" }
 torch = [
     { index = "torch-cu128" },
 ]
+
+[tool.uv.extra-build-dependencies]
+clip = ["setuptools<81"]
 
 [[tool.uv.index]]
 name = "torch-cu128"

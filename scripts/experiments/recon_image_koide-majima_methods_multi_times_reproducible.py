@@ -1,5 +1,18 @@
+"""Seed-reproducible counterpart of recon_image_koide-majima_methods_multi_times_no_seed.py.
+
+The ``_no_seed`` script is left untouched: it uses ``recon.func_mod``, whose
+results vary run to run (that is the point of the variability experiment). This
+script is the reproducible one -- it always uses ``recon.func_reproducible``, so
+the same ``--seed`` gives the same reconstruction.
+
+Example:
+    python scripts/experiments/recon_image_koide-majima_methods_multi_times_reproducible.py \\
+        original_all --seed 42 --subjects S01 --targets 18 --iters 1
+"""
+
 # %%
 import argparse
+import hashlib
 import os
 import pickle
 
@@ -10,20 +23,26 @@ import yaml
 from PIL import Image
 from recon_utils import convert_featname, get_target_label
 
-from repro_mental_image_recon.recon import func_mod as recon_func
+from repro_mental_image_recon.recon import func_reproducible as recon_func
 
-RESULT_ROOT = "./results/rep_recon_image_koide-majima_recon_variability_no_seed"
 
-# Subject id in the decoded-feature tree -> subject id used in the output tree.
-SUBJECT_DIRNAME = {"S01": "S1", "S02": "S2", "S03": "S3"}
-DEFAULT_SUBJECTS = ("S01", "S02", "S03")
-DEFAULT_TARGET_IDS = tuple(range(25))
-DEFAULT_ITERS = 10
+def derive_seed(base_seed, subject, targetID, iter_n):
+    """Deterministic per-reconstruction seed.
+
+    Derived from the run's base seed plus the loop indices, so each of the
+    (subject x target x iteration) reconstructions gets its own independent but
+    reproducible stream. Because the seed depends on the indices rather than on
+    the loop order, a run can be sharded across GPUs / restarted partway and
+    still produce identical results.
+    """
+    key = f"{base_seed}|{subject}|{targetID}|{iter_n}"
+    return int(hashlib.sha256(key.encode()).hexdigest()[:8], 16)
 
 
 def main(
     reconMethod="original_all",
-    save_base_dir=f"{RESULT_ROOT}/original_all",
+    save_base_dir="./test",
+    seed=None,
     subjects=None,
     targets=None,
     iters=None,
@@ -33,6 +52,16 @@ def main(
         prm_demo = yaml.safe_load(f)
     with open("./scripts/config/config_recon.yaml", "rb") as f:
         dt_cfg = yaml.safe_load(f)
+
+    # Resolve the seed: explicit --seed wins, otherwise the `seed` entry in
+    # config_recon.yaml (default 42). set_seed pins the global RNGs and cuDNN.
+    if seed is None:
+        seed = dt_cfg.get("seed", 42)
+    recon_func.set_seed(seed)
+    print(
+        f"[reproducibility] base seed = {seed} (per-run seeds derived "
+        "from subject/target/iteration)"
+    )
 
     dir_taming_transformer = dt_cfg["file_path"]["taming_transformer_dir"]
     import model_loading
@@ -69,12 +98,20 @@ def main(
     )
 
     # %%
-    subject_list = list(subjects) if subjects else list(DEFAULT_SUBJECTS)
-    unknown = [s for s in subject_list if s not in SUBJECT_DIRNAME]
-    if unknown:
-        raise ValueError(
-            f"unknown subjects {unknown}; choose from {sorted(SUBJECT_DIRNAME)}"
-        )
+    subject_list = ["S01", "S02", "S03"]
+    save_subject_list = ["S1", "S2", "S3"]
+    # Restrict the sweep from the CLI (shard across GPUs, or run a small subset
+    # for a reproducibility check). The per-run seed is derived from the indices,
+    # so a subset produces exactly the same results as the full sweep would.
+    if subjects is not None:
+        unknown = [s for s in subjects if s not in subject_list]
+        if unknown:
+            raise ValueError(
+                f"unknown subject(s) {unknown}; choose from {subject_list}"
+            )
+        save_subject_list = [save_subject_list[subject_list.index(s)] for s in subjects]
+        subject_list = list(subjects)
+    subject_dict = dict(zip(subject_list, save_subject_list))
     # select from 0 to 24
     # Here are examples:
     # ID 21: 'Bowling ball (artifact)'
@@ -83,10 +120,9 @@ def main(
     # ID 19: 'Goat (animal)'
     # ID  7: 'Blue + (symbol)'
     # ID 14: 'Black x (symbol)'
-    targetID_list = list(targets) if targets is not None else list(DEFAULT_TARGET_IDS)
-    out_of_range = [t for t in targetID_list if not 0 <= t < len(DEFAULT_TARGET_IDS)]
-    if out_of_range:
-        raise ValueError(f"target ids out of range {out_of_range}; expected 0..24")
+    targetID_list = np.arange(25)
+    if targets is not None:
+        targetID_list = np.array(targets)
 
     # reconMethod = 'original' # select from 'original' (default), 'Langevin', 'withoutLangevin'
 
@@ -109,7 +145,7 @@ def main(
     # Set parameters
     CLIPcoef_ = dt_cfg["recon_params"][reconMethod]["clip_coef"]
     feat_set = dt_cfg["recon_params"][reconMethod]["feat_set"]
-
+    disp_every = dt_cfg["recon_params"][reconMethod]["display_every"]
     numReps = dt_cfg["recon_params"][reconMethod]["numReps"]
     similarity = dt_cfg["recon_params"][reconMethod]["similarity"]
 
@@ -130,13 +166,13 @@ def main(
         "numReps_withLangevin"
     ]  # 500 # (default) 500
 
-    iter_num = DEFAULT_ITERS if iters is None else iters
+    iter_num = 10 if iters is None else iters
 
     # %%
-    for subject in subject_list:
-        for targetID in targetID_list:
+    for j, subject in enumerate(subject_list):
+        for i, targetID in enumerate(targetID_list):
             for iter_n in range(iter_num):
-                save_subject = SUBJECT_DIRNAME[subject]
+                save_subject = subject_dict[subject]
                 save_dir = f"{save_base_dir}/{save_subject}/iter{iter_n + 1:02}/VC"
                 os.makedirs(save_dir, exist_ok=True)
                 if targetID > 14:
@@ -145,6 +181,8 @@ def main(
                     tid = targetID
                 # %%
                 targetimname = get_target_label(targetID, targetimpath)
+                # Numbered by targetID, not by the loop position, so a --targets
+                # subset produces the same filenames as the full sweep.
                 # VGG
                 list_path_vgg = list()
                 for t_layername in used_layers_VGG:
@@ -241,6 +279,15 @@ def main(
                 # feat_norm = torch.tensor([torch.linalg.norm(targetVGGfeature_[i]) for i in range(len(targetVGGfeature_))])
                 # VGGlayerWeight_ = VGGlayerWeight_/VGGlayerWeight_.sum()
                 # VGGlayerWeight_ = 1. / (feat_norm ** 2)
+                # Per-reconstruction seed: independent stream for every
+                # (subject, target, iteration) so the 10 repeats still differ
+                # while each one stays reproducible on its own.
+                run_seed = derive_seed(seed, subject, targetID, iter_n)
+                print(
+                    f"[reproducibility] {subject} target{targetID} "
+                    f"iter{iter_n + 1} -> seed {run_seed}"
+                )
+
                 reconf = recon_func.imageRecon(
                     targetVGGfeature_,
                     meanVGGfeature_,
@@ -255,10 +302,11 @@ def main(
                     initialImage_PIL_,
                     initInputType="PIL",
                     similarity=similarity,
-                    disp_every=1,
+                    disp_every=disp_every,
                     numReps=numReps,
                     CLIPcoef=CLIPcoef_,
                     DEVICE=DEVICE,
+                    seed=run_seed,
                 )
                 # %%
                 print("Reconstruction without Langevin:")
@@ -270,9 +318,6 @@ def main(
                 woLang_time_step_list = []
                 loss_vgg_withoutLangevin_list = []
                 loss_clip_withoutLangevin_list = []
-                total_loss_withoutLangevin_list = []
-                currentLatentVec_list = [currentLatentVec]
-                currentImg_list = []
                 if numReps_withoutLangevin > 0:
                     for (
                         recImg,
@@ -287,12 +332,6 @@ def main(
                         woLang_time_step_list.append(time_step)
                         loss_vgg_withoutLangevin_list.append(loss_VGG)
                         loss_clip_withoutLangevin_list.append(loss_CLIP)
-                        currentLatentVec_list.append(
-                            currentLatentVec.detach().cpu().numpy()
-                        )
-                        currentImg_list.append(np.array(recImg))
-                        total_loss = loss_VGG + loss_CLIP * CLIPcoef_
-                        total_loss_withoutLangevin_list.append(total_loss)
                     # save the results
                     save_wo_lang_dir = f"{save_dir}/wo_lang/"
                     os.makedirs(save_wo_lang_dir, exist_ok=True)
@@ -305,10 +344,6 @@ def main(
                 wLang_time_step_list = []
                 loss_vgg_withLangevin_list = []
                 loss_clip_withLangevin_list = []
-                total_loss_withLangevin_list = []
-
-                current_LatentVec_withLangevin_list = []
-                currentImg_withLangevin_list = []
                 if numReps_Langevin > 0:
                     # generator = reconf.Langevin(initInput=currentLatentVec, initInputType='latentVector', numReps=numReps_Langevin,  returnVec=True)
                     generator = reconf.Langevin(
@@ -334,16 +369,6 @@ def main(
                         wLang_time_step_list.append(time_step)
                         loss_vgg_withLangevin_list.append(loss_VGG)
                         loss_clip_withLangevin_list.append(loss_CLIP)
-                        total_loss = loss_VGG + loss_CLIP * CLIPcoef_
-                        total_loss_withLangevin_list.append(total_loss)
-                        currentLatentVec_list.append(
-                            currentLatentVec.detach().cpu().numpy()
-                        )
-                        currentImg_list.append(np.array(recImg))
-                        current_LatentVec_withLangevin_list.append(
-                            currentLatentVec.detach().cpu().numpy()
-                        )
-                        currentImg_withLangevin_list.append(np.array(recImg))
 
                 # %%
 
@@ -351,6 +376,9 @@ def main(
 
                 save_file_name = f"{save_dir}/Img_{tid + 1:04d}_{targetimname}.pkl"
                 save_dict = {
+                    # seed actually used for this reconstruction (None if unseeded)
+                    "seed": run_seed,
+                    "base_seed": seed,
                     # latent vec
                     "latent_vec": currentLatentVec.cpu().detach().numpy(),
                     # time step
@@ -359,14 +387,8 @@ def main(
                     # loss
                     "loss_vgg_withoutLangevin_list": loss_vgg_withoutLangevin_list,
                     "loss_clip_withoutLangevin_list": loss_clip_withoutLangevin_list,
-                    "total_loss_witoutLangevin_list": total_loss_withoutLangevin_list,
                     "loss_vgg_withLangevin_list": loss_vgg_withLangevin_list,
                     "loss_clip_withLangevin_list": loss_clip_withLangevin_list,
-                    "total_loss_withLangevin_list": total_loss_withLangevin_list,
-                    "currentLatentVec_list": currentLatentVec_list,
-                    "currentImg_list": currentImg_list,
-                    "current_LatentVec_withLangevin_list": current_LatentVec_withLangevin_list,
-                    "currentImg_withLangevin_list": currentImg_withLangevin_list,
                 }
                 with open(save_file_name, "wb") as f:
                     pickle.dump(save_dict, f)
@@ -388,36 +410,65 @@ if __name__ == "__main__":
         default="original_all",
         choices=["original_all"],
     )
-    # Defaults reproduce the published run (3 subjects x 25 stimuli x 10 repeats);
-    # the flags exist to shard it across GPUs or to redo part of it.
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="base random seed (default: the `seed` entry in "
+        "config_recon.yaml, else 42). Per-run seeds are "
+        "derived from it plus subject/target/iteration.",
+    )
+    parser.add_argument(
+        "--results_dir",
+        type=str,
+        default=None,
+        help="output directory (default: results/rep_recon_image_koide-majima"
+        "_recon_reproducible_seed<N>/<method>)",
+    )
     parser.add_argument(
         "--subjects",
         type=str,
         nargs="+",
         default=None,
-        help=f"subjects to run (default: {' '.join(DEFAULT_SUBJECTS)})",
+        help="subset of subjects to run, e.g. --subjects S01 (default: all)",
     )
     parser.add_argument(
         "--targets",
         type=int,
         nargs="+",
         default=None,
-        help="target ids 0-24 to run (default: all 25)",
+        help="subset of target IDs (0-24) to run, e.g. --targets 18 (default: all)",
     )
     parser.add_argument(
         "--iters",
         type=int,
         default=None,
-        help=f"number of seed-free repeats per reconstruction (default: {DEFAULT_ITERS})",
+        help="number of repeated reconstructions per target (default: 10)",
     )
     args = parser.parse_args()
 
     reconMethod = args.method
-    save_base_dir = f"{RESULT_ROOT}/{reconMethod}"
+
+    if args.results_dir is not None:
+        save_base_dir = args.results_dir
+    else:
+        # Separate directory per seed, and separate from the unseeded
+        # `..._recon_variability_no_seed` results, which are never overwritten.
+        with open("./scripts/config/config_recon.yaml", "rb") as f:
+            _seed = (
+                args.seed
+                if args.seed is not None
+                else yaml.safe_load(f).get("seed", 42)
+            )
+        save_base_dir = (
+            f"./results/rep_recon_image_koide-majima_recon_reproducible"
+            f"_seed{_seed}/{reconMethod}"
+        )
     os.makedirs(save_base_dir, exist_ok=True)
     main(
         reconMethod,
         save_base_dir,
+        seed=args.seed,
         subjects=args.subjects,
         targets=args.targets,
         iters=args.iters,

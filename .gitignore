@@ -1,0 +1,60 @@
+# Generated outputs (regenerate via scripts/experiments/). Anchored with a
+# leading "/" so they only match at the repository root -- an unanchored
+# "figures/" would also swallow src/repro_mental_image_recon/figures/.
+/results/
+/results_backup*/
+/figures/
+/assets/
+/assets_ipynb/
+
+# Downloaded data and models
+/data/
+/models/
+*.zip
+*.tar.gz
+
+# Python and cache
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.log
+*.bak
+
+# Root-level convenience files (duplicates of results/)
+distance_distribution_deeprecon_TH_VC.pdf
+distance_distribution_deeprecon_TH_VC.png
+distances_dreamsim.csv
+distances_lpips.csv
+matrices_dreamsim.npz
+matrices_lpips.npz
+summary_deeprecon_TH_VC.txt
+results_variability_gap*.log
+
+# Local development clones at the repository root (lib/ holds the submodules,
+# which are authoritative and must stay tracked)
+/mental_img_recon/
+/external/
+/taming/
+/repro_koide_majima/
+
+# Exploratory, not part of the published analysis
+scripts/experiments/layout.py
+scripts/experiments/recon_func_sghmc.py
+scripts/experiments/run_sghmc_recon.py
+
+# Manuscripts (private, tracked separately)
+manuscripts/
+
+# Internal documentation (not for public release)
+writing/

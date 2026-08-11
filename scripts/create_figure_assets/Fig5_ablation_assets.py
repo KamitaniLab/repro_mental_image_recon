@@ -1,52 +1,38 @@
-"""Generate assets for Figure 4 (ablation reconstructions and preference analysis)."""
+"""Generate assets for Figure 5 (ablation reconstructions and preference analysis).
+
+Panel B is the reconstruction comparison across the four ablation conditions; panels
+D and E are the stacked identification proportions over four and two conditions.
+"""
 
 from __future__ import annotations
 
+import argparse
+import pickle
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pickle
 
-from fig_utils import GroupImageDrawer
-from figure_asset_utils import (
+from repro_mental_image_recon.figures.assets import (
     ensure_directory,
     load_recon_images,
     load_target_images,
     project_root,
 )
+from repro_mental_image_recon.figures.drawing import GroupImageDrawer
+from repro_mental_image_recon.figures.stimuli import SUBJECT_ID, select_random_stimuli
 
 PROJECT_ROOT = project_root()
 RECON_ROOT = PROJECT_ROOT / "results" / "rep_recon_image_koide-majima"
-OUTPUT_DIR = ensure_directory(PROJECT_ROOT / "assets" / "fig04")
+OUTPUT_DIR = PROJECT_ROOT / "assets" / "fig05"
 
-SUBJECT_ID = "S2"
 COMPARISON_CONDITIONS = {
     "Koide-Majima": "original_all",
     "w/o Baye": "AdamOnly_all",
     "w/o CLIP": "VGGonly_all",
     "w/o Baye and CLIP": "wo_SGLD_CLIP_all",
 }
-# copyright-safe subset of images for Figure 4
-RANDOM_POOL = (
-    "imageryExpStim01_red_smallring.tiff",
-    # "imageryExpStim02_red_+.tiff",
-    # "imageryExpStim04_green_smallring.tiff",
-    # "imageryExpStim05_green_+.tiff",
-    # "imageryExpStim07_blue_smallring.tiff",
-    "imageryExpStim08_blue_+.tiff",
-    # "imageryExpStim10_white_smallring.tiff",
-    # "imageryExpStim11_white_+.tiff",
-    "imageryExpStim18_anat_goldfish.tiff",
-    "imageryExpStim21_anat_swan.tiff",
-    # "imageryExpStim24_inat_post.tiff",
-    # "imageryExpStim25_inat_stainedglass.tiff",
-    # "imageryExpStim26_inat_umbrella.tiff",
-)
-
-RANDOM_COUNT = 4
-RANDOM_SEED = 42
 
 PREFERENCE_MODELS = ("dreamsim", "alexnet", "RN50", "lpips")
 PREFERENCE_PREFIX_FOUR = "ref_compare_4"
@@ -86,23 +72,19 @@ STACK_COLORS_TWO = (
 )
 
 
-def _recon_dir(condition_key: str) -> Path:
-    return RECON_ROOT / condition_key / SUBJECT_ID / "VC"
+def _recon_dir(recon_root: Path, condition_key: str) -> Path:
+    return recon_root / condition_key / SUBJECT_ID / "VC"
 
 
-def _select_random_stimuli() -> tuple[str, ...]:
-    rng = np.random.default_rng(RANDOM_SEED)
-    selection = rng.choice(RANDOM_POOL, size=RANDOM_COUNT, replace=False)
-    return tuple(sorted(selection))
-
-
-def export_random_comparison_panel() -> None:
-    image_names = _select_random_stimuli()
+def export_random_comparison_panel(recon_root: Path, output_dir: Path) -> None:
+    image_names = select_random_stimuli()
     target_images = load_target_images(image_names)
     conditions = [{"title": "Target", "images": target_images}]
 
     for label, condition_key in COMPARISON_CONDITIONS.items():
-        recon_images = load_recon_images(_recon_dir(condition_key), image_names)
+        recon_images = load_recon_images(
+            _recon_dir(recon_root, condition_key), image_names
+        )
         conditions.append({"title": label, "images": recon_images})
 
     drawer = GroupImageDrawer(
@@ -112,17 +94,19 @@ def export_random_comparison_panel() -> None:
         max_column_size=len(image_names),
     )
     panel = drawer.draw()
-    panel.save(OUTPUT_DIR / "Fig4b_S2_recon_image_random.pdf")
+    panel.save(output_dir / f"Fig5B_{SUBJECT_ID}_recon_image_random.pdf")
 
 
-def _load_preference_summary(prefix: str) -> dict[str, dict[str, np.ndarray]]:
+def _load_preference_summary(
+    prefix: str, recon_root: Path
+) -> dict[str, dict[str, np.ndarray]]:
     summary: dict[str, dict[str, np.ndarray]] = {}
     for model in PREFERENCE_MODELS:
         result_path = (
-            RECON_ROOT / f"{prefix}_preference_analysis_results_{model}_correlation.pkl"
+            recon_root / f"{prefix}_preference_analysis_results_{model}_correlation.pkl"
         )
         sim_path = (
-            RECON_ROOT
+            recon_root
             / f"{prefix}_preference_analysis_results_{model}_correlation_sim_matrix.pkl"
         )
         with result_path.open("rb") as handle:
@@ -198,17 +182,17 @@ def _plot_stacked_preferences(
     plt.close(fig)
 
 
-def export_preference_analyses() -> None:
-    summary_four = _load_preference_summary(PREFERENCE_PREFIX_FOUR)
+def export_preference_analyses(recon_root: Path, output_dir: Path) -> None:
+    summary_four = _load_preference_summary(PREFERENCE_PREFIX_FOUR, recon_root)
     data_four = _prepare_group_data(summary_four, FOUR_GROUP_KEYS)
     _plot_stacked_preferences(
         data_four,
         FOUR_METHOD_LABELS,
         STACK_COLORS_FOUR,
-        OUTPUT_DIR / "Fig4d_preference_analysis_four.pdf",
+        output_dir / "Fig5D_preference_analysis_four.pdf",
     )
 
-    summary_two = _load_preference_summary(PREFERENCE_PREFIX_TWO)
+    summary_two = _load_preference_summary(PREFERENCE_PREFIX_TWO, recon_root)
     data_two = _prepare_group_data(summary_two, TWO_GROUP_KEYS)
     colors = STACK_COLORS_TWO + ((0.8, 0.8, 0.8),) * (
         len(TWO_METHOD_LABELS) - len(STACK_COLORS_TWO)
@@ -217,13 +201,24 @@ def export_preference_analyses() -> None:
         data_two,
         TWO_METHOD_LABELS,
         colors[: len(TWO_METHOD_LABELS)],
-        OUTPUT_DIR / "Fig4e_preference_analysis_two.pdf",
+        output_dir / "Fig5E_preference_analysis_two.pdf",
     )
 
 
 def main() -> None:
-    export_random_comparison_panel()
-    export_preference_analyses()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--recon-root",
+        type=Path,
+        default=RECON_ROOT,
+        help="directory holding <condition>/<subject>/VC reconstructions "
+        "and the preference pickles",
+    )
+    parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR)
+    args = parser.parse_args()
+    output_dir = ensure_directory(args.output_dir)
+    export_random_comparison_panel(args.recon_root, output_dir)
+    export_preference_analyses(args.recon_root, output_dir)
 
 
 if __name__ == "__main__":

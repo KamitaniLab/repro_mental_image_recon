@@ -8,22 +8,27 @@ from __future__ import annotations
 
 import argparse
 import pickle
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Dict, Iterable, List, Mapping
 
 import numpy as np
 import torch
-import yaml
-from PIL import Image
-
 from bdpy.dl.torch.domain import ComposedDomain, image_domain
 from bdpy.recon.torch.modules import build_encoder
-from bdpy.recon.torch.modules.critic import LayerWiseAverageCritic, MSE
+from bdpy.recon.torch.modules.critic import MSE, LayerWiseAverageCritic
 from bdpy.recon.torch.modules.encoder import SimpleEncoder
+from PIL import Image
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+# SOURCE_IMAGE_NAMES is the canonical target-index -> stimulus-file mapping; import it
+# rather than restating it here. The stimuli themselves come from data/source, the same
+# images the figures show, instead of the downsampled copies in the label YAML.
+from repro_mental_image_recon.figures.assets import (
+    SOURCE_IMAGE_NAMES,
+    project_root,
+    resolve_data_dir,
+)
 
-from recon_utils import get_target_image  # noqa: E402  pylint: disable=wrong-import-position
+REPO_ROOT = project_root()
 
 COMPARISON_CONFIGS = {
     "cand2": {
@@ -81,6 +86,12 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
         help="Directory that stores reconstruction outputs.",
     )
     parser.add_argument(
+        "--source-dir",
+        type=Path,
+        default=None,
+        help="target stimuli (default: data/source, or $IMAGERY_SOURCE_DIR).",
+    )
+    parser.add_argument(
         "--device",
         default="cuda",
         help="Computation device identifier (defaults to CUDA when available).",
@@ -124,13 +135,16 @@ class CLIPEncoder(SimpleEncoder):
         return features
 
 
-def load_stimuli(target_image_path: str) -> List[Image.Image]:
-    images: List[Image.Image] = []
-    for _subject in SUBJECTS:
-        for target_id in TARGET_IDS:
-            array, _ = get_target_image(target_id, target_image_path)
-            images.append(Image.fromarray(array).convert("RGB").resize((224, 224)))
-    return images
+def load_stimuli(source_dir: Path) -> list[Image.Image]:
+    """The 25 targets, repeated once per subject to match the reconstruction order."""
+    per_subject = []
+    for target_id in TARGET_IDS:
+        path = source_dir / SOURCE_IMAGE_NAMES[target_id]
+        if not path.exists():
+            raise FileNotFoundError(f"Missing stimulus image: {path}")
+        with Image.open(path) as handle:
+            per_subject.append(handle.convert("RGB").resize((224, 224)))
+    return [image for _ in SUBJECTS for image in per_subject]
 
 
 def _stimulus_label(target_id: int) -> str:
@@ -138,8 +152,8 @@ def _stimulus_label(target_id: int) -> str:
     return f"Img{tid + 1:04d}"
 
 
-def load_recon_images(result_dir: Path, recon_method: str) -> List[Image.Image]:
-    images: List[Image.Image] = []
+def load_recon_images(result_dir: Path, recon_method: str) -> list[Image.Image]:
+    images: list[Image.Image] = []
     for subject in SUBJECTS:
         for target_id in TARGET_IDS:
             image_path = (
@@ -156,7 +170,7 @@ def load_recon_images(result_dir: Path, recon_method: str) -> List[Image.Image]:
 
 def collect_recon_sets(
     result_dir: Path, recon_methods: Iterable[str]
-) -> Dict[str, List[Image.Image]]:
+) -> dict[str, list[Image.Image]]:
     return {method: load_recon_images(result_dir, method) for method in recon_methods}
 
 
@@ -227,7 +241,7 @@ def select_critic(loss_name: str) -> LayerWiseAverageCritic:
     return MSE()
 
 
-def stack_images(images: List[Image.Image], device: torch.device) -> torch.Tensor:
+def stack_images(images: list[Image.Image], device: torch.device) -> torch.Tensor:
     batch = torch.cat(
         [
             torch.from_numpy(np.asarray(image, dtype=np.float32))[None]
@@ -239,12 +253,12 @@ def stack_images(images: List[Image.Image], device: torch.device) -> torch.Tenso
 
 
 def evaluate_feature_metric(
-    recon_sets: Mapping[str, List[Image.Image]],
-    target_images: List[Image.Image],
+    recon_sets: Mapping[str, list[Image.Image]],
+    target_images: list[Image.Image],
     model_name: str,
     loss_name: str,
     device: torch.device,
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     model, encoder_domain, layer_names = prepare_feature_backend(model_name, device)
     pil_domain = image_domain.PILDomainWithExplicitCrop()
     critic = select_critic(loss_name)
@@ -257,7 +271,7 @@ def evaluate_feature_metric(
         for method, images in recon_sets.items()
     }
 
-    similarity_matrices: Dict[str, List[np.ndarray]] = {
+    similarity_matrices: dict[str, list[np.ndarray]] = {
         layer: [] for layer in layer_names
     }
 
@@ -281,11 +295,11 @@ def evaluate_feature_metric(
 
 
 def evaluate_dreamsim_metric(
-    recon_sets: Mapping[str, List[Image.Image]],
-    target_images: List[Image.Image],
+    recon_sets: Mapping[str, list[Image.Image]],
+    target_images: list[Image.Image],
     device: torch.device,
     use_lpips: bool = False,
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     from dreamsim import dreamsim
 
     model, preprocess = dreamsim(pretrained=True, device=device)
@@ -308,7 +322,7 @@ def evaluate_dreamsim_metric(
 
     target_tensor = torch.stack([_prep(image) for image in target_images]).to(device)
 
-    similarity_stacks: List[np.ndarray] = []
+    similarity_stacks: list[np.ndarray] = []
     for method, images in recon_sets.items():
         recon_tensor = torch.stack([_prep(image) for image in images]).to(device)
         with torch.no_grad():
@@ -329,7 +343,7 @@ def evaluate_dreamsim_metric(
 
 def preference_from_similarity(
     matrices: Mapping[str, np.ndarray],
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     return {layer: np.argmax(matrix, axis=1) for layer, matrix in matrices.items()}
 
 
@@ -355,11 +369,7 @@ def main(argv: Iterable[str] | None = None) -> None:
     torch.manual_seed(SEED)
     np.random.seed(SEED)
 
-    config_dir = REPO_ROOT / "scripts" / "config"
-    with (config_dir / "demo_params.yaml").open("rb") as handle:
-        demo_params = yaml.safe_load(handle)
-
-    target_images = load_stimuli(demo_params["dt_targetimages_path"])
+    target_images = load_stimuli(args.source_dir or resolve_data_dir())
     comparison = COMPARISON_CONFIGS[args.comparison]
     recon_sets = collect_recon_sets(args.results_dir, comparison["recon_methods"])
 

@@ -1,28 +1,28 @@
-import sys
 import argparse
+import os
+import pickle
+
+import numpy as np
+import recon_func as recon_func
+import scipy
+import torch
 import yaml
 from PIL import Image
-import numpy as np
-import torch
-import pickle
-import scipy
-import os
+from recon_utils import convert_featname, get_target_label
 
-from recon_utils import get_target_image, convert_featname
-import recon_func as recon_func
+RESULT_ROOT = "./results/rep_recon_image_koide-majima"
 
 
-def main(reconMethod="original", save_base_dir="./test"):
+def main(reconMethod="original_all", save_base_dir=f"{RESULT_ROOT}/original_all"):
     # %% https://colab.research.google.com/drive/1gaMoae0ntiT94-rQUMymkZboNc-imTzl#scrollTo=OFDZyEImrVE2&line=14&uniqifier=1
     # Load demo params
     with open("./scripts/config/demo_params.yaml", "rb") as f:
         prm_demo = yaml.safe_load(f)
     # Load config for imrecon
-    with open("./scripts/config/config_KS_mod.yaml", "rb") as f:
+    with open("./scripts/config/config_recon.yaml", "rb") as f:
         dt_cfg = yaml.safe_load(f)
-    # Set directory of taming_transformer
+    # Set directory of taming_transformer (holds the VQGAN checkpoint and config)
     dir_taming_transformer = dt_cfg["file_path"]["taming_transformer_dir"]
-    sys.path.insert(0, dir_taming_transformer)
 
     # Set GPU if it's available
     cudaID = "cuda:0"
@@ -95,23 +95,15 @@ def main(reconMethod="original", save_base_dir="./test"):
     numReps = dt_cfg["recon_params"][reconMethod]["numReps"]
     similarity = dt_cfg["recon_params"][reconMethod]["similarity"]
 
-    if reconMethod == "Langevin" or reconMethod == "original":
-        lr_gamma = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_gamma"]
-        lr_a = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_a"]
-        lr_b = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_b"]
-        T_langevin = dt_cfg["recon_params"][reconMethod]["Langevin"]["T"]
     try:
-        lr_gamma = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_gamma"]
-        lr_a = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_a"]
-        lr_b = dt_cfg["recon_params"][reconMethod]["Langevin"]["lr_b"]
-        T_langevin = dt_cfg["recon_params"][reconMethod]["Langevin"]["T"]
-
-        print(lr_gamma)
-        print(lr_a)
-        print(lr_b)
-        print(T_langevin)
+        langevin = dt_cfg["recon_params"][reconMethod]["Langevin"]
+        lr_gamma = langevin["lr_gamma"]
+        lr_a = langevin["lr_a"]
+        lr_b = langevin["lr_b"]
+        T_langevin = langevin["T"]
     except KeyError as e:
         raise ValueError(f"Langevin config does not include: {e}")
+    print(f"Langevin: lr_gamma={lr_gamma} lr_a={lr_a} lr_b={lr_b} T={T_langevin}")
     # set parameters
     numReps_withoutLangevin = dt_cfg["recon_params"][reconMethod][
         "numReps_withoutLangevin"
@@ -131,7 +123,7 @@ def main(reconMethod="original", save_base_dir="./test"):
             else:
                 tid = targetID
             # %%
-            targetImg_, targetimname = get_target_image(targetID, targetimpath)
+            targetimname = get_target_label(targetID, targetimpath)
 
             # VGG
             list_path_vgg = list()
@@ -262,7 +254,7 @@ def main(reconMethod="original", save_base_dir="./test"):
                 # save the results
                 save_wo_lang_dir = f"{save_dir}/wo_lang/"
                 os.makedirs(save_wo_lang_dir, exist_ok=True)
-                image_label = "Img{:04d}".format(tid + 1)
+                image_label = f"Img{tid + 1:04d}"
                 save_file_name = (
                     f"{save_wo_lang_dir}/recon_img_normalized-{image_label}.jpg"
                 )
@@ -313,7 +305,7 @@ def main(reconMethod="original", save_base_dir="./test"):
             with open(save_file_name, "wb") as f:
                 pickle.dump(save_dict, f)
             # save images
-            image_label = "Img{:04d}".format(tid + 1)
+            image_label = f"Img{tid + 1:04d}"
             save_name = f"{save_dir}/recon_img_normalized-{image_label}.jpg"
             recImg.save(save_name)
 
@@ -330,21 +322,14 @@ if __name__ == "__main__":
         default="original_all",
         choices=[
             "original_all",
-            "CLIPonly_all",
             "wo_SGLD_CLIP_all",
             "VGGonly_all",
             "AdamOnly_all",
-            "original_all_default_SGLD_v2",
-            "original_all_default_SGLD_v2_normal_temp",
-            "original_all_fixed_values_SGLD_v2",
-            "original_all_fixed_values_SGLD_v3",
-            "original_all_fixed_values_SGLD_v2_normal_temp",
-            "original_all_fixed_values_SGLD_v3_normal_temp",
         ],
     )
     args = parser.parse_args()
     # the first arugment is the method to use
     reconMethod = args.method
-    save_base_dir = f"./results/rep_recon_image_koide-majima/{reconMethod}"
+    save_base_dir = f"{RESULT_ROOT}/{reconMethod}"
     os.makedirs(save_base_dir, exist_ok=True)
     main(reconMethod, save_base_dir)
